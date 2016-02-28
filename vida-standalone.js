@@ -16,13 +16,12 @@ export class Vida
             controls: undefined,
             popup: undefined
         };
-        this.initializeLayout();
-        this.verovioWorker = new Worker(options.workerLocation);
-        this.initializeWorker();
+        // initializes layout of the parent element and Verovio communication; "private function"
+        initializeLayoutAndWorker(this, options);
 
         this.resizeTimer = undefined;
         this.updateDims();
-        $(window).on('resize.vida', this.resizeComponents);
+        window.addEventListener('resize.vida', this.resizeComponents);
         this.verovioSettings = {
             pageHeight: 100,
             pageWidth: 100,
@@ -36,84 +35,14 @@ export class Vida
         this.mei = undefined;
         this.verovioContent = undefined;
         this.pageCount = 0;
-        this.systemData = { // actually an array, but just in case
-            /*
-            index: {
+        this.systemData = [
+            /* {
                 'topOffset':
                 'id': 
-            }
-            */
-        };
+            } */
+        ];
+        this.currentSystem = 0; // index of systemData
         // pageTops should just use systemData topOffset
-    }
-
-    initializeLayout()
-    {
-        this.ui.parentElement.innerHTML = '<div id="vida-page-controls">' +
-            '<div class="vida-prev-page vida-direction-control"></div>' +
-            '<div class="vida-zoom-controls">' +
-                '<span class="vida-zoom-in"></span>' +
-                '<span class="vida-zoom-out"></span>' +
-            '</div>' +
-            //'<div class="vida-grid-toggle">Toggle to grid</div>' +
-            '<div class="vida-orientation-toggle">Toggle orientation</div>' +
-            '<div class="vida-next-page vida-direction-control"></div>' +
-        '</div>' +
-        '<div id="vida-svg-wrapper" class="vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
-        '<div id="vida-svg-overlay" class="vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
-        '<div id="vida-loading-popup"></div>';
-
-        this.ui.svgWrapper = document.getElementById("vida-svg-wrapper");
-        this.ui.svgOverlay = document.getElementById("vida-svg-overlay");
-        this.ui.controls = document.getElementById("vida-page-controls");
-        this.ui.popup = document.getElementById("vida-loading-popup");
-    }
-
-    initializeWorker()
-    {
-        var self = this;
-        this.verovioWorker.onmessage = function(event){
-            switch (event.data[0]){
-                case "dataLoaded":
-                    self.pageCount = event.data[1];
-                    const vidaOffset = self.ui.svgWrapper.getBoundingClientRect().top;
-                    for(var pIdx = 0; pIdx < self.pageCount; pIdx++)
-                    {
-                        self.ui.svgWrapper.innerHTML += "<div class='vida-system-wrapper' data-index='" + pIdx + "'></div>";
-                        self.contactWorker("renderPage", [pIdx]);
-                    }
-                    break;
-
-                case "returnPage":
-                    const pageIdx = event.data[1];
-                    document.querySelector(".vida-system-wrapper[data-index='" + pageIdx + "']").innerHTML = event.data[2];
-
-                    const parsedSVG = parser.parseFromString(event.data[2], "text/xml");
-                    const systems = parsedSVG.querySelectorAll('g[class=system]');
-                    for(var sIdx = 0; sIdx < systems.length; sIdx++) 
-                    {
-                        self.systemData[systems[sIdx].id] = {
-                            'topOffset': systems[sIdx].getBoundingClientRect().top - vidaOffset - self.verovioSettings.border,
-                            'pageIdx': pageIdx
-                        };   
-                    }
-
-                    self.verovioContent = $("#vida-svg-wrapper").html();
-                    if(event.data[3]) self.createOverlay( 0 );
-                    $(".vida-loading-popup").remove();
-                    reapplyHighlights();
-                    break;
-
-                case "mei":
-                    mei = event.data[1];
-                    console.log(mei);
-                    break;
-
-                default:
-                    console.log("Message from Verovio of type", event.data[0] + ":", event.data);
-                    break;
-            }
-        };
     }
 
     contactWorker(messageType, data)
@@ -175,33 +104,48 @@ export class Vida
         this.contactWorker('loadData', this.mei + "\n");
     }
 
-    createOverlay(param)
+    createOverlay()
     {
-        console.log("Would create overlay", param);
+        // Copy wrapper HTML to overlay
+        this.ui.svgOverlay.innerHTML = this.ui.svgWrapper.innerHTML;
+
+        // Make all <g>s and <path>s transparent, hide the text
+        var idx;
+        var gElems = this.ui.svgOverlay.querySelectorAll("g");
+        for (idx = 0; idx < gElems.length; idx++)
+        {
+            gElems[idx].style.strokeOpacity = 0.0;
+            gElems[idx].style.fillOpacity = 0.0;
+        }
+        var pathElems = this.ui.svgOverlay.querySelectorAll("path");
+        for (idx = 0; idx < pathElems.length; idx++)
+        {
+            pathElems[idx].style.strokeOpacity = 0.0;
+            pathElems[idx].style.fillOpacity = 0.0;
+        }
+        delete this.ui.svgOverlay.querySelectorAll("text"); //was originally $.remove()
+
+        $(".vida-svg-object").on('click.vida', function(e) {
+            var closestMeasure = $(e.target).closest(".measure");
+            if (closestMeasure.length > 0)
+                mei.Events.publish('MeasureClicked', [closestMeasure]);
+            e.stopPropagation();
+        });
+
+        var notes = this.ui.svgOverlay.querySelectorAll(".note");
+        for (idx = 0; idx < notes.length; idx++)
+        {
+            var note = notes[idx];
+            note.addEventListener('mousedown.vida', mouseDownListener);
+            note.addEventListener('touchstart.vida', mouseDownListener);
+        }
+        // this.ui.svgOverlay.querySelectorAll("defs").append("filter").attr("id", "selector");
+        // resizeComponents();
     }
 }
 
-// Input and output
-let mei = "";
-let svg = "";
-
-// Layout info
-let systemData = {}; //systemID: {'topOffset': offset, 'pageIdx'': pageidx}
-let pageTops = [];
-
 // Various other pieces of information
-let currentPage = 0;
-let totalPages = 0;
 let clickedPage;
-
-// Settings to pass to Verovio
-var verovioSettings = {
-    border: 50,
-    horizontallyOriented: 0,    //1 or 0 (NOT boolean, but mimicing it) for whether the page will display horizontally or vertically
-    ignoreLayout: 1,
-    pageHeight: 100,
-    pageWidth: 100,
-};
 
 // Laurent's dragging stuff
 var drag_id = [];
@@ -216,17 +160,6 @@ function reloadPage(pageIdx, initOverlay)
     reloadMEI();
     // verovioWorker.postMessage(['renderPage', pageIdx, initOverlay]);
 }
-
-this.changeMusic = function(newData)
-{
-    refreshVerovio(newData);
-};
-
-this.reloadPanel = function()
-{            
-    reloadOptions();
-    refreshVerovio();
-};
 
 this.toggleOrientation = function()
 {
@@ -399,58 +332,6 @@ var mouseUpListener = function()
     }
 };
 
-function create_overlay( id ) {
-    $("#vida-svg-overlay").html( $("#vida-svg-wrapper").html() );
-    overlay_svg = $("#vida-svg-overlay > svg");
-
-    var gElems = document.querySelectorAll("#vida-svg-overlay * g");
-    var pathElems = document.querySelectorAll("#vida-svg-overlay * path");
-    var idx;
-
-    for (idx = 0; idx < gElems.length; idx++)
-    {
-        gElems[idx].style.strokeOpacity = 0.0;
-        gElems[idx].style.fillOpacity = 0.0;
-    }
-    for (idx = 0; idx < pathElems.length; idx++)
-    {
-        pathElems[idx].style.strokeOpacity = 0.0;
-        pathElems[idx].style.fillOpacity = 0.0;
-    }
-
-    $("#vida-svg-overlay * text").remove();
-    $(".vida-svg-object").on('click.vida', function(e) {
-        var closestMeasure = $(e.target).closest(".measure");
-        if (closestMeasure.length > 0)
-            mei.Events.publish('MeasureClicked', [closestMeasure]);
-        e.stopPropagation();
-    });
-
-    $("#vida-svg-overlay * .note").on('mousedown.vida', mouseDownListener);
-    $("#vida-svg-overlay * .note").on('touchstart.vida', mouseDownListener);
-    $("#vida-svg-overlay * defs").append("filter").attr("id", "selector");
-    // resizeComponents();
-}
-
-var syncScroll = function(e)
-{        
-    var newTop = $(e.target).scrollTop();
-    $("#vida-svg-wrapper").scrollTop(newTop);
-
-    for(var idx = 0; idx < pageTops.length; idx++)
-    {
-        var thisTop = pageTops[idx];
-        if(newTop <= thisTop)
-        {
-            //there's a bit at the top
-            currentPage = idx;
-            break;
-        }
-    }
-
-    checkNavIcons();
-};
-
 var scrollToPage = function(pageNumber)
 {
     var toScrollTo = pageTops[pageNumber];
@@ -503,8 +384,6 @@ $(".vida-prev-page").on('click', function()
     }
 });
 
-$("#vida-svg-overlay").on('scroll', syncScroll);
-
 $(".vida-zoom-in").on('click', function()
 {
     if (verovioSettings.scale <= 100)
@@ -538,3 +417,83 @@ $(".vida-zoom-out").on('click', function()
         $(".vida-zoom-in").css('visibility', 'visible');
     }
 });
+
+const initializeLayoutAndWorker = function(self, options)
+{
+    self.ui.parentElement.innerHTML = '<div id="vida-page-controls">' +
+        '<div class="vida-prev-page vida-direction-control"></div>' +
+        '<div class="vida-zoom-controls">' +
+            '<span class="vida-zoom-in"></span>' +
+            '<span class="vida-zoom-out"></span>' +
+        '</div>' +
+        //'<div class="vida-grid-toggle">Toggle to grid</div>' +
+        '<div class="vida-orientation-toggle">Toggle orientation</div>' +
+        '<div class="vida-next-page vida-direction-control"></div>' +
+    '</div>' +
+    '<div id="vida-svg-wrapper" class="vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
+    '<div id="vida-svg-overlay" class="vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
+    '<div id="vida-loading-popup"></div>';
+
+    self.ui.svgWrapper = document.getElementById("vida-svg-wrapper");
+    self.ui.svgOverlay = document.getElementById("vida-svg-overlay");
+    self.ui.controls = document.getElementById("vida-page-controls");
+    self.ui.popup = document.getElementById("vida-loading-popup");
+
+    self.ui.svgOverlay.addEventListener('scroll', (e) => {
+        var newTop = self.ui.svgWrapper.scrollTop = e.target.scrollTop;
+
+        for(var idx = 0; idx < self.systemData.length; idx++)
+            if(newTop <= self.systemData[idx].topOffset)
+            {
+                //there's a bit at the top
+                self.currentSystem = idx;
+                break;
+            }
+
+        checkNavIcons();
+    });
+
+    self.verovioWorker = new Worker(options.workerLocation); // the threaded wrapper for the Verovio object
+    self.verovioWorker.onmessage = function(event){
+        switch (event.data[0]){
+            case "dataLoaded":
+                self.pageCount = event.data[1];
+                const vidaOffset = self.ui.svgWrapper.getBoundingClientRect().top;
+                for(var pIdx = 0; pIdx < self.pageCount; pIdx++)
+                {
+                    self.ui.svgWrapper.innerHTML += "<div class='vida-system-wrapper' data-index='" + pIdx + "'></div>";
+                    self.contactWorker("renderPage", [pIdx]);
+                }
+                break;
+
+            case "returnPage":
+                const pageIdx = event.data[1];
+                document.querySelector(".vida-system-wrapper[data-index='" + pageIdx + "']").innerHTML = event.data[2];
+
+                const parsedSVG = parser.parseFromString(event.data[2], "text/xml");
+                const systems = parsedSVG.querySelectorAll('g[class=system]');
+                for(var sIdx = 0; sIdx < systems.length; sIdx++) 
+                {
+                    self.systemData[systems[sIdx].id] = {
+                        'topOffset': systems[sIdx].getBoundingClientRect().top - vidaOffset - self.verovioSettings.border,
+                        'pageIdx': pageIdx
+                    };   
+                }
+
+                self.verovioContent = $("#vida-svg-wrapper").html();
+                if(event.data[3]) self.createOverlay();
+                $(".vida-loading-popup").remove();
+                reapplyHighlights();
+                break;
+
+            case "mei":
+                mei = event.data[1];
+                console.log(mei);
+                break;
+
+            default:
+                console.log("Message from Verovio of type", event.data[0] + ":", event.data);
+                break;
+        }
+    };
+}
