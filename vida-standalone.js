@@ -123,7 +123,7 @@ export class Vida
             pathElems[idx].style.strokeOpacity = 0.0;
             pathElems[idx].style.fillOpacity = 0.0;
         }
-        delete this.ui.svgOverlay.querySelectorAll("text"); //was originally $.remove()
+        delete this.ui.svgOverlay.querySelectorAll("text"); // TODO: was originally $.remove()
 
         $(".vida-svg-object").on('click.vida', function(e) {
             var closestMeasure = $(e.target).closest(".measure");
@@ -143,17 +143,22 @@ export class Vida
         // resizeComponents();
     }
 
-    checkNavIcons()
+    updateNavIcons()
     {
-        if(this.currentSystem === this.totalSystems - 1)
-            this.ui.nextPage.style.visibility = 'hidden';
-        else if(this.ui.nextPage.style.visibility == 'hidden')
-            this.ui.nextPage.style.visibility = 'visible';
+        if (this.currentSystem === this.totalSystems - 1) this.ui.nextPage.style.visibility = 'hidden';
+        else this.ui.nextPage.style.visibility = 'visible';
 
-        if(this.currentSystem === 0)
-            this.ui.prevPage.style.visibility = 'hidden';
-        else if(this.ui.prevPage.style.visibility == 'hidden')
-            this.ui.prevPage.style.visibility = 'visible';
+        if (this.currentSystem === 0) this.ui.prevPage.style.visibility = 'hidden';
+        else this.ui.prevPage.style.visibility = 'visible';
+    }
+
+    updateZoomIcons()
+    {
+        if (this.verovioSettings.scale == 100) this.ui.zoomIn.style.visibility = 'hidden';
+        else this.ui.zoomIn.style.visibility = 'visible';
+
+        if (this.verovioSettings.scale == 10) this.ui.zoomOut.style.visibility = 'hidden';
+        else this.ui.zoomOut.style.visibility = 'visible';
     }
 
     scrollToObject(id)
@@ -166,7 +171,7 @@ export class Vida
     {
         var toScrollTo = this.systemData[pageNumber].topOffset;
         this.ui.svgOverlay.scrollTop = toScrollTo;
-        this.checkNavIcons();
+        this.updateNavIcons();
     }
 
     initializeLayoutAndWorker(options)
@@ -175,8 +180,8 @@ export class Vida
         this.ui.parentElement.innerHTML = '<div id="vida-page-controls">' +
             '<div id="vida-prev-page" class="vida-direction-control"></div>' +
             '<div id="vida-zoom-controls">' +
-                '<span id="vida-zoom-in"></span>' +
-                '<span id="vida-zoom-out"></span>' +
+                '<span id="vida-zoom-in" class="vida-zoom-control"></span>' +
+                '<span id="vida-zoom-out" class="vida-zoom-control"></span>' +
             '</div>' +
             //'<div class="vida-grid-toggle">Toggle to grid</div>' +
             '<div id="vida-next-page" class="vida-direction-control"></div>' +
@@ -192,7 +197,10 @@ export class Vida
         this.ui.controls = document.getElementById("vida-page-controls");
         this.ui.popup = document.getElementById("vida-loading-popup");
         this.ui.nextPage = document.getElementById("vida-next-page");
-        this.ui.prevPage = document.getElementById("vida-prev-page")
+        this.ui.prevPage = document.getElementById("vida-prev-page");
+        this.ui.orientationToggle = document.getElementById("vida-orientation-toggle");
+        this.ui.zoomIn = document.getElementById("vida-zoom-in");
+        this.ui.zoomOut = document.getElementById("vida-zoom-out");
 
         // Initialize all the listeners on permanent objects
         this.initializeOneTimeListeners(self);
@@ -255,6 +263,13 @@ export class Vida
         this.ui.nextPage.addEventListener('click', this.boundGotoNext);
         this.boundGotoPrev = (evt) => this.gotoPrevPage(evt);
         this.ui.prevPage.addEventListener('click', this.boundGotoPrev);
+        this.boundOrientationToggle = (evt) => this.toggleOrientation(evt);
+        this.ui.orientationToggle.addEventListener('click', this.boundOrientationToggle);
+
+        this.boundZoomIn = (evt) => this.zoomIn(evt);
+        this.ui.zoomIn.addEventListener('click', this.boundZoomIn);
+        this.boundZoomOut = (evt) => this.zoomOut(evt);
+        this.ui.zoomOut.addEventListener('click', this.boundZoomOut);
     }
 
     /**
@@ -271,8 +286,7 @@ export class Vida
                 break;
             }
 
-
-        this.checkNavIcons();
+        this.updateNavIcons();
     }
 
     gotoNextPage()
@@ -283,6 +297,42 @@ export class Vida
     gotoPrevPage()
     {
         if (this.currentSystem > 0) this.scrollToPage(this.currentSystem - 1);
+    }
+
+    toggleOrientation() // TODO: this setting might not be right. IgnoreLayout instead?
+    {
+        if(this.verovioSettings.horizontallyOriented === 1)
+        {
+            this.verovioSettings.horizontallyOriented = 0;
+            $('.vida-direction-control').show();
+        }
+        else
+        {
+            this.verovioSettings.horizontallyOriented = 1;
+            $('.vida-direction-control').hide();
+        }
+
+        this.refreshVerovio();
+    }
+
+    zoomIn()
+    {
+        if (this.verovioSettings.scale <= 100)
+        {
+            this.verovioSettings.scale += 10;
+            this.refreshVerovio();
+        }
+        this.updateZoomIcons();
+    }
+
+    zoomOut()
+    {
+        if (this.verovioSettings.scale > 10)
+        {
+            this.verovioSettings.scale -= 10;
+            this.refreshVerovio();
+        }
+        this.updateZoomIcons();
     }
 }
 
@@ -302,22 +352,6 @@ function reloadPage(pageIdx, initOverlay)
     reloadMEI();
     // verovioWorker.postMessage(['renderPage', pageIdx, initOverlay]);
 }
-
-this.toggleOrientation = function()
-{
-    if(verovioSettings.horizontallyOriented === 1)
-    {
-        verovioSettings.horizontallyOriented = 0;
-        $('.vida-direction-control').show();
-    }
-    else
-    {
-        verovioSettings.horizontallyOriented = 1;
-        $('.vida-direction-control').hide();
-    }
-
-    refreshVerovio();
-};
 
 this.edit = function(editorAction)
 {
@@ -425,7 +459,7 @@ var mouseDownListener = function(e)
     $(document).on("mouseup", mouseUpListener);
     $(document).on("touchmove", mouseMoveListener);
     $(document).on("touchend", mouseUpListener);
-    mei.Events.publish("HighlightSelected", [id])
+    mei.Events.publish("HighlightSelected", [id]);
 };
 
 var mouseMoveListener = function(e)
@@ -465,41 +499,3 @@ var mouseUpListener = function()
         drag_id.length = 0;
     }
 };
-
-$(".vida-orientation-toggle").on('click', this.toggleOrientation);
-
-$(".vida-grid-toggle").on('click', this.toggleGrid);
-
-$(".vida-zoom-in").on('click', function()
-{
-    if (verovioSettings.scale <= 100)
-    {
-        verovioSettings.scale += 10;
-        refreshVerovio();
-    }
-    if(verovioSettings.scale == 100)
-    {
-        $(".vida-zoom-in").css('visibility', 'hidden');
-    }
-    else if($(".vida-zoom-out").css('visibility') == 'hidden')
-    {
-        $(".vida-zoom-out").css('visibility', 'visible');
-    }
-});
-
-$(".vida-zoom-out").on('click', function()
-{
-    if (verovioSettings.scale > 10)
-    {
-        verovioSettings.scale -= 10;
-        refreshVerovio();
-    }
-    if(verovioSettings.scale == 10)
-    {
-        $(".vida-zoom-out").css('visibility', 'hidden');
-    }
-    else if($(".vida-zoom-in").css('visibility') == 'hidden')
-    {
-        $(".vida-zoom-in").css('visibility', 'visible');
-    }
-});
