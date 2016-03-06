@@ -40,9 +40,16 @@ export class Vida
                 'id': 
             } */
         ];
-        this.parser = new DOMParser(); // best to create once and leave available globally
+        
         this.currentSystem = 0; // topmost system object within the Vida display
         this.totalSystems = 0; // total number of system objects
+
+        // For dragging
+        this.clickedPage;
+        this.drag_id = [];
+        this.drag_start;
+        this.dragging;
+        this.highlighted_cache = [];
     }
 
     contactWorker(messageType, data)
@@ -128,7 +135,8 @@ export class Vida
         $(".vida-svg-object").on('click.vida', function(e) {
             var closestMeasure = $(e.target).closest(".measure");
             if (closestMeasure.length > 0)
-                mei.Events.publish('MeasureClicked', [closestMeasure]);
+                console.log("Would have published measureClicked");
+                // mei.Events.publish('MeasureClicked', [closestMeasure]);
             e.stopPropagation();
         });
 
@@ -136,8 +144,12 @@ export class Vida
         for (idx = 0; idx < notes.length; idx++)
         {
             var note = notes[idx];
-            note.addEventListener('mousedown.vida', mouseDownListener);
-            note.addEventListener('touchstart.vida', mouseDownListener);
+
+            this.boundMouseDown = (evt) => this.mouseDownListener(evt);
+            note.removeEventListener('mousedown', this.boundMouseDown);
+            note.removeEventListener('touchstart', this.boundMouseDown);
+            note.addEventListener('mousedown', this.boundMouseDown);
+            note.addEventListener('touchstart', this.boundMouseDown);
         }
         // this.ui.svgOverlay.querySelectorAll("defs").append("filter").attr("id", "selector");
         // resizeComponents();
@@ -225,7 +237,6 @@ export class Vida
                     systemWrapper.innerHTML = event.data[2];
 
                     // Add data about the available systems here
-                    const parsedSVG = self.parser.parseFromString(event.data[2], "text/xml");
                     const systems = self.ui.svgWrapper.querySelectorAll('g[class=system]');
                     for(var sIdx = 0; sIdx < systems.length; sIdx++)
                         self.systemData[sIdx] = {
@@ -240,7 +251,7 @@ export class Vida
                     if(event.data[3]) self.createOverlay();
                     self.verovioContent = self.ui.svgWrapper.innerHTML;
                     self.ui.popup.remove();
-                    reapplyHighlights();
+                    self.reapplyHighlights();
                     break;
 
                 case "mei": // [mei as interpreted by Verovio]
@@ -259,17 +270,20 @@ export class Vida
         // synchronized scrolling between svg overlay and wrapper
         this.boundSyncScroll = (evt) => this.syncScroll(evt);
         this.ui.svgOverlay.addEventListener('scroll', this.boundSyncScroll); // todo: proxy these
+
+        // control bar events
         this.boundGotoNext = (evt) => this.gotoNextPage(evt);
         this.ui.nextPage.addEventListener('click', this.boundGotoNext);
         this.boundGotoPrev = (evt) => this.gotoPrevPage(evt);
         this.ui.prevPage.addEventListener('click', this.boundGotoPrev);
         this.boundOrientationToggle = (evt) => this.toggleOrientation(evt);
         this.ui.orientationToggle.addEventListener('click', this.boundOrientationToggle);
-
         this.boundZoomIn = (evt) => this.zoomIn(evt);
         this.ui.zoomIn.addEventListener('click', this.boundZoomIn);
         this.boundZoomOut = (evt) => this.zoomOut(evt);
         this.ui.zoomOut.addEventListener('click', this.boundZoomOut);
+
+
     }
 
     /**
@@ -334,168 +348,145 @@ export class Vida
         }
         this.updateZoomIcons();
     }
-}
 
-// Various other pieces of information
-let clickedPage;
-
-// Laurent's dragging stuff
-var drag_id = [];
-var drag_start;
-var dragging;
-var highlighted_cache = [];
-
-
-function reloadPage(pageIdx, initOverlay)
-{
-    initPopup("Reloading...");
-    reloadMEI();
-    // verovioWorker.postMessage(['renderPage', pageIdx, initOverlay]);
-}
-
-this.edit = function(editorAction)
-{
-    // verovioWorker.postMessage(['edit', editorAction]);
-};
-
-function newHighlight(div, id) 
-{
-    for(var idx = 0; idx < highlighted_cache.length; idx++)
+    mouseDownListener(e)
     {
-        if(div == highlighted_cache[idx][0] && id == highlighted_cache[idx][1]) return;
-    }
-    highlighted_cache.push([div, id]);
-    reapplyHighlights();
-}
+        var idx;
+        var t = e.target, tx = parseInt(t.getAttribute("x"), 10), ty = parseInt(t.getAttribute("y"), 10);
+        var id = t.parentNode.attributes.id.value;
+        var sysID = t.closest('.system').attributes.id.value;
 
-function reapplyHighlights()
-{
-    for(var idx = 0; idx < highlighted_cache.length; idx++)
-    {
-        $("#" + highlighted_cache[idx][0] + " * #" + highlighted_cache[idx][1] ).css({
-            "fill": "#ff0000",
-            "stroke": "#ff0000",
-            "fill-opacity": "1.0",
-            "stroke-opacity": "1.0"
-        });
-    }
-}
+        for(idx = 0; idx < this.systemData.length; idx++)
+            if(this.systemData[idx].id == sysID)
+            {
+                this.clickedPage = idx;
+                break;
+            }
 
-function removeHighlight(div, id)
-{
-    for(var idx = 0; idx < highlighted_cache.length; idx++)
-    {
-        if(div == highlighted_cache[idx][0] && id == highlighted_cache[idx][1])
-        {
-            var removed = highlighted_cache.splice(idx, 1);
-            var css = removed[0] == "vida-svg-wrapper" ?
-                {
-                    "fill": "#000000",
-                    "stroke": "#000000",
-                    "fill-opacity": "1.0",
-                    "stroke-opacity": "1.0"
-                } :
-                {
-                    "fill": "#000000",
-                    "stroke": "#000000",
-                    "fill-opacity": "0.0",
-                    "stroke-opacity": "0.0"
-                };
-            $("#" + removed[0] + " * #" + removed[1] ).css(css);
-            return;
-        }
-    }
-}
+        if (id != this.drag_id[0]) this.drag_id.unshift( id ); // make sure we don't add it twice
+        //hide_id( "svg_output", drag_id[0] );
+        this.resetHighlights();
+        this.newHighlight( "vida-svg-overlay", this.drag_id[0] );
 
-function resetHighlights()
-{
-    while(highlighted_cache[0])
-    {
-        removeHighlight(highlighted_cache[0][0], highlighted_cache[0][1]);
-    }
-}
+        var viewBoxSVG = $(t).closest("svg");
+        var parentSVG = viewBoxSVG.parent().closest("svg")[0];
+        var actualSizeArr = viewBoxSVG[0].getAttribute("viewBox").split(" ");
+        var actualHeight = parseInt(actualSizeArr[2]);
+        var actualWidth = parseInt(actualSizeArr[3]);
+        var svgHeight = parseInt(parentSVG.getAttribute('height'));
+        var svgWidth = parseInt(parentSVG.getAttribute('width'));
+        var pixPerPix = ((actualHeight / svgHeight) + (actualWidth / svgWidth)) / 2;
 
-var mouseDownListener = function(e)
-{
-    var idx;
-    var t = e.target, tx = parseInt(t.getAttribute("x"), 10), ty = parseInt(t.getAttribute("y"), 10);
-    var id = t.parentNode.attributes.id.value;
-    var sysID = t.closest('.system').attributes.id.value;
-    var sysIDs = Object.keys(systemData);
-
-    for(idx = 0; idx < sysIDs.length; idx++)
-    {
-        var curID = sysIDs[idx];
-        if(curID == sysID)
-        {
-            clickedPage = systemData[curID].pageIdx;
-            break;
-        }
-    }
-
-    if (id != drag_id[0]) drag_id.unshift( id ); // make sure we don't add it twice
-    //hide_id( "svg_output", drag_id[0] );
-    resetHighlights();
-    newHighlight( "vida-svg-overlay", drag_id[0] );
-
-    var viewBoxSVG = $(t).closest("svg");
-    var parentSVG = viewBoxSVG.parent().closest("svg")[0];
-    var actualSizeArr = viewBoxSVG[0].getAttribute("viewBox").split(" ");
-    var actualHeight = parseInt(actualSizeArr[2]);
-    var actualWidth = parseInt(actualSizeArr[3]);
-    var svgHeight = parseInt(parentSVG.getAttribute('height'));
-    var svgWidth = parseInt(parentSVG.getAttribute('width'));
-    var pixPerPix = ((actualHeight / svgHeight) + (actualWidth / svgWidth)) / 2;
-
-    drag_start = {
-        "x": tx, 
-        "initY": e.pageY, 
-        "svgY": ty, 
-        "pixPerPix": pixPerPix //ty / (e.pageY - $("#vida-svg-wrapper")[0].getBoundingClientRect().top)
+        this.drag_start = {
+            "x": tx, 
+            "initY": e.pageY, 
+            "svgY": ty, 
+            "pixPerPix": pixPerPix //ty / (e.pageY - $("#vida-svg-wrapper")[0].getBoundingClientRect().top)
+        };
+        // we haven't started to drag yet, this might be just a selection
+        this.dragging = false;
+        this.boundMouseMove = (evt) => this.mouseMoveListener(evt);
+        this.boundMouseUp = (evt) => this.mouseUpListener(evt);
+        $(document).on("mousemove", this.boundMouseMove);
+        $(document).on("mouseup", this.boundMouseUp);
+        $(document).on("touchmove", this.boundMouseMove);
+        $(document).on("touchend", this.boundMouseUp);
+        console.log("Would have published highlightSelected");
     };
-    // we haven't started to drag yet, this might be just a selection
-    dragging = false;
-    $(document).on("mousemove", mouseMoveListener);
-    $(document).on("mouseup", mouseUpListener);
-    $(document).on("touchmove", mouseMoveListener);
-    $(document).on("touchend", mouseUpListener);
-    mei.Events.publish("HighlightSelected", [id]);
-};
 
-var mouseMoveListener = function(e)
-{
-    var scaledY = drag_start.svgY + (e.pageY - drag_start.initY) * drag_start.pixPerPix;
-    e.target.parentNode.setAttribute("transform", "translate(" + [0 , scaledY] + ")");
+    mouseMoveListener(e)
+    {
+        const scaledY = this.drag_start.svgY + (e.pageY - this.drag_start.initY) * this.drag_start.pixPerPix;
+        e.target.parentNode.setAttribute("transform", "translate(" + [0 , scaledY] + ")");
 
-    $(e.target).parent().css({
-        "fill-opacity": "0.0",
-        "stroke-opacity": "0.0"
-    });
+        $(e.target).parent().css({
+            "fill-opacity": "0.0",
+            "stroke-opacity": "0.0"
+        });
 
-    // we use this to distinct from click (selection)
-    dragging = true;
-    editorAction = JSON.stringify({ action: 'drag', param: { elementId: drag_id[0], 
-        x: parseInt(drag_start.x),
-        y: parseInt(scaledY) }   
-    });
+        // we use this to distinct from click (selection)
+        this.dragging = true;
+        const editorAction = JSON.stringify({
+            action: 'drag', 
+            param: { 
+                elementId: this.drag_id[0], 
+                x: parseInt(this.drag_start.x),
+                y: parseInt(scaledY) 
+            }   
+        });
+        console.log(editorAction);
 
-    // verovioWorker.postMessage(['edit', editorAction, clickedPage, false]); 
-    removeHighlight( "vida-svg-overlay", drag_id[0] );  
-    newHighlight( "vida-svg-wrapper", drag_id[0] ); 
-    e.preventDefault();
-};
+        this.contactWorker('edit', [editorAction, this.clickedPage, false]); 
+        this.removeHighlight( "vida-svg-overlay", this.drag_id[0] );  
+        this.newHighlight( "vida-svg-wrapper", this.drag_id[0] ); 
+        e.preventDefault();
+    };
 
-var mouseUpListener = function()
-{
-    $(document).unbind("mousemove", mouseMoveListener);
-    $(document).unbind("mouseup", mouseUpListener);
-    $(document).unbind("touchmove", mouseMoveListener);
-    $(document).unbind("touchend", mouseUpListener);
-    if (dragging) {
-        removeHighlight("vida-svg-overlay", drag_id[0]);
-        delete this.__origin__; 
-        reloadPage( clickedPage, true );
-        dragging = false; 
-        drag_id.length = 0;
+    mouseUpListener()
+    {
+        $(document).unbind("mousemove", this.boundMouseMove);
+        $(document).unbind("mouseup", this.boundMouseUp);
+        $(document).unbind("touchmove", this.boundMouseMove);
+        $(document).unbind("touchend", this.boundMouseUp);
+        if (this.dragging) {
+            this.removeHighlight("vida-svg-overlay", this.drag_id[0]);
+            this.contactWorker("renderPage", [this.clickedPage, true]);
+            this.dragging = false;
+            this.drag_id.splice(0);
+        }
+    };
+
+    newHighlight(div, id) 
+    {
+        for(var idx = 0; idx < this.highlighted_cache.length; idx++)
+        {
+            if(div == this.highlighted_cache[idx][0] && id == this.highlighted_cache[idx][1]) return;
+        }
+        this.highlighted_cache.push([div, id]);
+        this.reapplyHighlights();
     }
-};
+
+    reapplyHighlights()
+    {
+        for(var idx = 0; idx < this.highlighted_cache.length; idx++)
+        {
+            $("#" + this.highlighted_cache[idx][0] + " * #" + this.highlighted_cache[idx][1] ).css({
+                "fill": "#ff0000",
+                "stroke": "#ff0000",
+                "fill-opacity": "1.0",
+                "stroke-opacity": "1.0"
+            });
+        }
+    }
+
+    removeHighlight(div, id)
+    {
+        for(var idx = 0; idx < this.highlighted_cache.length; idx++)
+        {
+            if(div == this.highlighted_cache[idx][0] && id == this.highlighted_cache[idx][1])
+            {
+                var removed = this.highlighted_cache.splice(idx, 1);
+                var css = removed[0] == "vida-svg-wrapper" ?
+                    {
+                        "fill": "#000000",
+                        "stroke": "#000000",
+                        "fill-opacity": "1.0",
+                        "stroke-opacity": "1.0"
+                    } :
+                    {
+                        "fill": "#000000",
+                        "stroke": "#000000",
+                        "fill-opacity": "0.0",
+                        "stroke-opacity": "0.0"
+                    };
+                $("#" + removed[0] + " * #" + removed[1] ).css(css);
+                return;
+            }
+        }
+    }
+
+    resetHighlights()
+    {
+        while(this.highlighted_cache[0]) this.removeHighlight(this.highlighted_cache[0][0], this.highlighted_cache[0][1]);
+    }
+}
