@@ -27,7 +27,7 @@ export class Vida
             inputFormat: 'mei', // change at thy own risk
             scale: 40,
             border: 50,
-            horizontallyOriented: 0,    //1 or 0 (NOT boolean, but mimicing it) for whether the page will display horizontally or vertically
+            noLayout: 0,    //1 or 0 (NOT boolean, but mimicing it) for whether the page will display horizontally or vertically
             ignoreLayout: 1,
             adjustPageHeight: 1
         };
@@ -46,8 +46,15 @@ export class Vida
 
         // For dragging
         this.clickedPage;
-        this.drag_id = [];
-        this.drag_start;
+        this.drag_info = {
+            /*
+            "ids": [], 
+            "x": tx, 
+            "initY": e.pageY, 
+            "svgY": ty, 
+            "pixPerPix": pixPerPix
+            */
+        };
         this.dragging;
         this.highlighted_cache = [];
     }
@@ -118,13 +125,13 @@ export class Vida
 
         // Make all <g>s and <path>s transparent, hide the text
         var idx;
-        var gElems = this.ui.svgOverlay.querySelectorAll("g");
+        const gElems = this.ui.svgOverlay.querySelectorAll("g");
         for (idx = 0; idx < gElems.length; idx++)
         {
             gElems[idx].style.strokeOpacity = 0.0;
             gElems[idx].style.fillOpacity = 0.0;
         }
-        var pathElems = this.ui.svgOverlay.querySelectorAll("path");
+        const pathElems = this.ui.svgOverlay.querySelectorAll("path");
         for (idx = 0; idx < pathElems.length; idx++)
         {
             pathElems[idx].style.strokeOpacity = 0.0;
@@ -132,20 +139,14 @@ export class Vida
         }
         delete this.ui.svgOverlay.querySelectorAll("text"); // TODO: was originally $.remove()
 
-        $(".vida-svg-object").on('click.vida', function(e) {
-            var closestMeasure = $(e.target).closest(".measure");
-            if (closestMeasure.length > 0)
-                console.log("Would have published measureClicked");
-                // mei.Events.publish('MeasureClicked', [closestMeasure]);
-            e.stopPropagation();
-        });
-
-        var notes = this.ui.svgOverlay.querySelectorAll(".note");
+        // Add event listeners for click
+        this.ui.svgOverlay.removeEventListener('click', this.boundObjectClick);
+        this.ui.svgOverlay.addEventListener('click', this.boundObjectClick);
+        const notes = this.ui.svgOverlay.querySelectorAll(".note");
         for (idx = 0; idx < notes.length; idx++)
         {
-            var note = notes[idx];
+            const note = notes[idx];
 
-            this.boundMouseDown = (evt) => this.mouseDownListener(evt);
             note.removeEventListener('mousedown', this.boundMouseDown);
             note.removeEventListener('touchstart', this.boundMouseDown);
             note.addEventListener('mousedown', this.boundMouseDown);
@@ -282,8 +283,12 @@ export class Vida
         this.ui.zoomIn.addEventListener('click', this.boundZoomIn);
         this.boundZoomOut = (evt) => this.zoomOut(evt);
         this.ui.zoomOut.addEventListener('click', this.boundZoomOut);
+        this.boundObjectClick = (evt) => this.objectClickListener(evt);
 
 
+        this.boundMouseDown = (evt) => this.mouseDownListener(evt);
+        this.boundMouseMove = (evt) => this.mouseMoveListener(evt);
+        this.boundMouseUp = (evt) => this.mouseUpListener(evt);
     }
 
     /**
@@ -291,14 +296,20 @@ export class Vida
      */
     syncScroll(e)
     {
-        var newTop = this.ui.svgWrapper.scrollTop = e.target.scrollTop;
-
-        for(var idx = 0; idx < this.systemData.length; idx++)
-            if(newTop <= this.systemData[idx].topOffset + 25)
+        if (!this.verovioSettings.noLayout)
+        {
+            var newTop = this.ui.svgWrapper.scrollTop = e.target.scrollTop;
+            for(var idx = 0; idx < this.systemData.length; idx++)
             {
-                this.currentSystem = idx;
-                break;
+                if(newTop <= this.systemData[idx].topOffset + 25)
+                {
+                    this.currentSystem = idx;
+                    break;
+                }
             }
+        }
+
+        else this.ui.svgWrapper.scrollLeft = this.ui.svgOverlay.scrollLeft;
 
         this.updateNavIcons();
     }
@@ -315,14 +326,14 @@ export class Vida
 
     toggleOrientation() // TODO: this setting might not be right. IgnoreLayout instead?
     {
-        if(this.verovioSettings.horizontallyOriented === 1)
+        if(this.verovioSettings.noLayout === 1)
         {
-            this.verovioSettings.horizontallyOriented = 0;
+            this.verovioSettings.noLayout = 0;
             $('.vida-direction-control').show();
         }
         else
         {
-            this.verovioSettings.horizontallyOriented = 1;
+            this.verovioSettings.noLayout = 1;
             $('.vida-direction-control').hide();
         }
 
@@ -349,35 +360,43 @@ export class Vida
         this.updateZoomIcons();
     }
 
+    objectClickListener(e)
+    {
+        var closestMeasure = e.target.closest(".measure");
+        if (closestMeasure)
+            console.log("Would have published measureClicked", closestMeasure);
+            // mei.Events.publish('MeasureClicked', [closestMeasure]);
+        e.stopPropagation();
+    }
+
     mouseDownListener(e)
     {
-        var idx;
-        var t = e.target, tx = parseInt(t.getAttribute("x"), 10), ty = parseInt(t.getAttribute("y"), 10);
+        var t = e.target, tx = t.getAttribute("x") >> 0, ty = t.getAttribute("y") >> 0;
         var id = t.parentNode.attributes.id.value;
         var sysID = t.closest('.system').attributes.id.value;
 
-        for(idx = 0; idx < this.systemData.length; idx++)
+        for(var idx = 0; idx < this.systemData.length; idx++)
             if(this.systemData[idx].id == sysID)
             {
                 this.clickedPage = idx;
                 break;
             }
 
-        if (id != this.drag_id[0]) this.drag_id.unshift( id ); // make sure we don't add it twice
-        //hide_id( "svg_output", drag_id[0] );
+        if (this.drag_info.ids && this.drag_info.ids.indexOf(id) === -1) this.drag_info.ids.push(id); // make sure we don't add it twice
         this.resetHighlights();
-        this.newHighlight( "vida-svg-overlay", this.drag_id[0] );
+        this.newHighlight( "vida-svg-overlay", this.drag_info.ids[0] );
 
-        var viewBoxSVG = $(t).closest("svg");
-        var parentSVG = viewBoxSVG.parent().closest("svg")[0];
-        var actualSizeArr = viewBoxSVG[0].getAttribute("viewBox").split(" ");
+        var viewBoxSVG = t.closest("svg");
+        var parentSVG = viewBoxSVG.parentNode;
+        var actualSizeArr = viewBoxSVG.getAttribute("viewBox").split(" ");
         var actualHeight = parseInt(actualSizeArr[2]);
         var actualWidth = parseInt(actualSizeArr[3]);
         var svgHeight = parseInt(parentSVG.getAttribute('height'));
         var svgWidth = parseInt(parentSVG.getAttribute('width'));
         var pixPerPix = ((actualHeight / svgHeight) + (actualWidth / svgWidth)) / 2;
 
-        this.drag_start = {
+        this.drag_info = {
+            "ids": [], 
             "x": tx, 
             "initY": e.pageY, 
             "svgY": ty, 
@@ -385,8 +404,6 @@ export class Vida
         };
         // we haven't started to drag yet, this might be just a selection
         this.dragging = false;
-        this.boundMouseMove = (evt) => this.mouseMoveListener(evt);
-        this.boundMouseUp = (evt) => this.mouseUpListener(evt);
         $(document).on("mousemove", this.boundMouseMove);
         $(document).on("mouseup", this.boundMouseUp);
         $(document).on("touchmove", this.boundMouseMove);
@@ -396,29 +413,25 @@ export class Vida
 
     mouseMoveListener(e)
     {
-        const scaledY = this.drag_start.svgY + (e.pageY - this.drag_start.initY) * this.drag_start.pixPerPix;
+        const scaledY = this.drag_info.svgY + (e.pageY - this.drag_info.initY) * this.drag_info.pixPerPix;
         e.target.parentNode.setAttribute("transform", "translate(" + [0 , scaledY] + ")");
-
-        $(e.target).parent().css({
-            "fill-opacity": "0.0",
-            "stroke-opacity": "0.0"
-        });
+        e.target.parentNode.style["fill-opacity"] = "0.0";
+        e.target.parentNode.style["stroke-opacity"] = "0.0";
 
         // we use this to distinct from click (selection)
         this.dragging = true;
         const editorAction = JSON.stringify({
             action: 'drag', 
             param: { 
-                elementId: this.drag_id[0], 
-                x: parseInt(this.drag_start.x),
+                elementId: this.drag_info["ids"][0], 
+                x: parseInt(this.drag_info.x),
                 y: parseInt(scaledY) 
             }   
         });
-        console.log(editorAction);
 
         this.contactWorker('edit', [editorAction, this.clickedPage, false]); 
-        this.removeHighlight( "vida-svg-overlay", this.drag_id[0] );  
-        this.newHighlight( "vida-svg-wrapper", this.drag_id[0] ); 
+        this.removeHighlight( "vida-svg-overlay", this.drag_info["ids"][0] );  
+        this.newHighlight( "vida-svg-wrapper", this.drag_info["ids"][0] ); 
         e.preventDefault();
     };
 
@@ -429,19 +442,18 @@ export class Vida
         $(document).unbind("touchmove", this.boundMouseMove);
         $(document).unbind("touchend", this.boundMouseUp);
         if (this.dragging) {
-            this.removeHighlight("vida-svg-overlay", this.drag_id[0]);
+            this.removeHighlight("vida-svg-overlay", this.drag_info["ids"][0]);
             this.contactWorker("renderPage", [this.clickedPage, true]);
             this.dragging = false;
-            this.drag_id.splice(0);
+            this.drag_info = {};
         }
     };
 
     newHighlight(div, id) 
     {
         for(var idx = 0; idx < this.highlighted_cache.length; idx++)
-        {
             if(div == this.highlighted_cache[idx][0] && id == this.highlighted_cache[idx][1]) return;
-        }
+
         this.highlighted_cache.push([div, id]);
         this.reapplyHighlights();
     }
