@@ -48,7 +48,6 @@ export class Vida
         this.clickedPage;
         this.drag_info = {
             /*
-            "ids": [], 
             "x": tx, 
             "initY": e.pageY, 
             "svgY": ty, 
@@ -59,134 +58,9 @@ export class Vida
         this.highlighted_cache = [];
     }
 
-    contactWorker(messageType, data)
-    {
-        this.verovioWorker.postMessage([messageType].concat(data || []));
-    }
-
-    reloadOptions()
-    {
-        this.verovioSettings.pageHeight = Math.max(this.ui.svgWrapper.clientHeight * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100); // minimal value required by Verovio
-        this.verovioSettings.pageWidth = Math.max(this.ui.svgWrapper.clientWidth * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100); // idem     
-        this.verovioWorker.postMessage(['setOptions', JSON.stringify(this.verovioSettings)]);
-    }
-
-    // TODO: strip jQuery
-    resizeComponents()
-    {
-        // Immediately: resize larger components
-        this.updateDims();
-
-        // Set timeout for resizing Verovio once full resize action is complete
-        clearTimeout(this.resizeTimer);
-        const self = this;
-        this.resizeTimer = setTimeout(function ()
-        {
-            self.refreshVerovio();
-        }, 200);
-    }
-
-    updateDims()
-    {
-        this.ui.svgOverlay.style.height = this.ui.svgWrapper.style.height = this.ui.parentElement.clientHeight - this.ui.controls.clientHeight;
-        this.ui.svgOverlay.style.top = this.ui.svgWrapper.style.top = this.ui.controls.clientHeight;
-        this.ui.svgOverlay.style.width = this.ui.svgWrapper.style.width = this.ui.parentElement.clientWidth;
-    }
-
-    initPopup(text)
-    {
-        this.ui.popup.style.top = this.ui.parentElement.getBoundingClientRect().top + 50;
-        this.ui.popup.style.left = this.ui.parentElement.getBoundingClientRect().left + 30;
-        this.ui.popup.innerHTML = text;
-        this.ui.popup.style.display = "block";
-    }
-
-    hidePopup()
-    {
-        this.ui.popup.innerHTML = "";
-        this.ui.popup.style.display = "none";
-    }
-
-    // Used to reload Verovio, or to provide new MEI
-    refreshVerovio(mei)
-    {
-        if (mei) this.mei = mei;
-        if (!this.mei) return;
-
-        this.ui.svgOverlay.innerHTML = this.ui.svgWrapper.innerHTML = this.verovioContent = "";
-        this.reloadOptions();
-        this.contactWorker('loadData', this.mei + "\n");
-    }
-
-    createOverlay()
-    {
-        // Copy wrapper HTML to overlay
-        this.ui.svgOverlay.innerHTML = this.ui.svgWrapper.innerHTML;
-
-        // Make all <g>s and <path>s transparent, hide the text
-        var idx;
-        const gElems = this.ui.svgOverlay.querySelectorAll("g");
-        for (idx = 0; idx < gElems.length; idx++)
-        {
-            gElems[idx].style.strokeOpacity = 0.0;
-            gElems[idx].style.fillOpacity = 0.0;
-        }
-        const pathElems = this.ui.svgOverlay.querySelectorAll("path");
-        for (idx = 0; idx < pathElems.length; idx++)
-        {
-            pathElems[idx].style.strokeOpacity = 0.0;
-            pathElems[idx].style.fillOpacity = 0.0;
-        }
-        delete this.ui.svgOverlay.querySelectorAll("text"); // TODO: was originally $.remove()
-
-        // Add event listeners for click
-        this.ui.svgOverlay.removeEventListener('click', this.boundObjectClick);
-        this.ui.svgOverlay.addEventListener('click', this.boundObjectClick);
-        const notes = this.ui.svgOverlay.querySelectorAll(".note");
-        for (idx = 0; idx < notes.length; idx++)
-        {
-            const note = notes[idx];
-
-            note.removeEventListener('mousedown', this.boundMouseDown);
-            note.removeEventListener('touchstart', this.boundMouseDown);
-            note.addEventListener('mousedown', this.boundMouseDown);
-            note.addEventListener('touchstart', this.boundMouseDown);
-        }
-        // this.ui.svgOverlay.querySelectorAll("defs").append("filter").attr("id", "selector");
-        // resizeComponents();
-    }
-
-    updateNavIcons()
-    {
-        if (this.currentSystem === this.totalSystems - 1) this.ui.nextPage.style.visibility = 'hidden';
-        else this.ui.nextPage.style.visibility = 'visible';
-
-        if (this.currentSystem === 0) this.ui.prevPage.style.visibility = 'hidden';
-        else this.ui.prevPage.style.visibility = 'visible';
-    }
-
-    updateZoomIcons()
-    {
-        if (this.verovioSettings.scale == 100) this.ui.zoomIn.style.visibility = 'hidden';
-        else this.ui.zoomIn.style.visibility = 'visible';
-
-        if (this.verovioSettings.scale == 10) this.ui.zoomOut.style.visibility = 'hidden';
-        else this.ui.zoomOut.style.visibility = 'visible';
-    }
-
-    scrollToObject(id)
-    {
-        var index = $("#vida-svg-overlay " + id).closest('#vida-svg-overlay > svg').index("#vida-svg-overlay > svg");
-        scrollToPage(index);
-    }
-
-    scrollToPage(pageNumber)
-    {
-        var toScrollTo = this.systemData[pageNumber].topOffset;
-        this.ui.svgOverlay.scrollTop = toScrollTo;
-        this.updateNavIcons();
-    }
-
+    /**
+     * Init code separated out for cleanliness' sake
+     */
     initializeLayoutAndWorker(options)
     {
         // Set up the base layout
@@ -291,9 +165,131 @@ export class Vida
         this.boundMouseUp = (evt) => this.mouseUpListener(evt);
     }
 
+    contactWorker(messageType, data)
+    {
+        this.verovioWorker.postMessage([messageType].concat(data || []));
+    }
+
+    updateDims()
+    {
+        this.ui.svgOverlay.style.height = this.ui.svgWrapper.style.height = this.ui.parentElement.clientHeight - this.ui.controls.clientHeight;
+        this.ui.svgOverlay.style.top = this.ui.svgWrapper.style.top = this.ui.controls.clientHeight;
+        this.ui.svgOverlay.style.width = this.ui.svgWrapper.style.width = this.ui.parentElement.clientWidth;
+    }
+
+    initPopup(text)
+    {
+        this.ui.popup.style.top = this.ui.parentElement.getBoundingClientRect().top + 50;
+        this.ui.popup.style.left = this.ui.parentElement.getBoundingClientRect().left + 30;
+        this.ui.popup.innerHTML = text;
+        this.ui.popup.style.display = "block";
+    }
+
+    hidePopup()
+    {
+        this.ui.popup.innerHTML = "";
+        this.ui.popup.style.display = "none";
+    }
+
+    // Used to reload Verovio, or to provide new MEI
+    refreshVerovio(mei)
+    {
+        if (mei) this.mei = mei;
+        if (!this.mei) return;
+
+        this.ui.svgOverlay.innerHTML = this.ui.svgWrapper.innerHTML = this.verovioContent = "";
+        this.verovioSettings.pageHeight = Math.max(this.ui.svgWrapper.clientHeight * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100); // minimal value required by Verovio
+        this.verovioSettings.pageWidth = Math.max(this.ui.svgWrapper.clientWidth * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100); // idem     
+        this.contactWorker('setOptions', JSON.stringify(this.verovioSettings));
+        this.contactWorker('loadData', this.mei + "\n");
+    }
+
+    createOverlay()
+    {
+        // Copy wrapper HTML to overlay
+        this.ui.svgOverlay.innerHTML = this.ui.svgWrapper.innerHTML;
+
+        // Make all <g>s and <path>s transparent, hide the text
+        var idx;
+        const gElems = this.ui.svgOverlay.querySelectorAll("g");
+        for (idx = 0; idx < gElems.length; idx++)
+        {
+            gElems[idx].style.strokeOpacity = 0.0;
+            gElems[idx].style.fillOpacity = 0.0;
+        }
+        const pathElems = this.ui.svgOverlay.querySelectorAll("path");
+        for (idx = 0; idx < pathElems.length; idx++)
+        {
+            pathElems[idx].style.strokeOpacity = 0.0;
+            pathElems[idx].style.fillOpacity = 0.0;
+        }
+        delete this.ui.svgOverlay.querySelectorAll("text"); // TODO: was originally $.remove()
+
+        // Add event listeners for click
+        this.ui.svgOverlay.removeEventListener('click', this.boundObjectClick);
+        this.ui.svgOverlay.addEventListener('click', this.boundObjectClick);
+        const notes = this.ui.svgOverlay.querySelectorAll(".note");
+        for (idx = 0; idx < notes.length; idx++)
+        {
+            const note = notes[idx];
+
+            note.removeEventListener('mousedown', this.boundMouseDown);
+            note.removeEventListener('touchstart', this.boundMouseDown);
+            note.addEventListener('mousedown', this.boundMouseDown);
+            note.addEventListener('touchstart', this.boundMouseDown);
+        }
+        // this.ui.svgOverlay.querySelectorAll("defs").append("filter").attr("id", "selector");
+        // resizeComponents();
+    }
+
+    updateNavIcons()
+    {
+        if (this.currentSystem === this.totalSystems - 1) this.ui.nextPage.style.visibility = 'hidden';
+        else this.ui.nextPage.style.visibility = 'visible';
+
+        if (this.currentSystem === 0) this.ui.prevPage.style.visibility = 'hidden';
+        else this.ui.prevPage.style.visibility = 'visible';
+    }
+
+    updateZoomIcons()
+    {
+        if (this.verovioSettings.scale == 100) this.ui.zoomIn.style.visibility = 'hidden';
+        else this.ui.zoomIn.style.visibility = 'visible';
+
+        if (this.verovioSettings.scale == 10) this.ui.zoomOut.style.visibility = 'hidden';
+        else this.ui.zoomOut.style.visibility = 'visible';
+    }
+
+    scrollToObject(id)
+    {
+        var index = $("#vida-svg-overlay " + id).closest('#vida-svg-overlay > svg').index("#vida-svg-overlay > svg");
+        scrollToPage(index);
+    }
+
+    scrollToPage(pageNumber)
+    {
+        var toScrollTo = this.systemData[pageNumber].topOffset;
+        this.ui.svgOverlay.scrollTop = toScrollTo;
+        this.updateNavIcons();
+    }
+
     /**
      * Event listeners
      */
+    resizeComponents()
+    {
+        // Immediately: resize larger components
+        this.updateDims();
+
+        // Set timeout for resizing Verovio once full resize action is complete
+        clearTimeout(this.resizeTimer);
+        const self = this;
+        this.resizeTimer = setTimeout(function ()
+        {
+            self.refreshVerovio();
+        }, 200);
+    }
+
     syncScroll(e)
     {
         if (!this.verovioSettings.noLayout)
@@ -371,7 +367,8 @@ export class Vida
 
     mouseDownListener(e)
     {
-        var t = e.target, tx = t.getAttribute("x") >> 0, ty = t.getAttribute("y") >> 0;
+        console.log(e.target);
+        var t = e.target;
         var id = t.parentNode.attributes.id.value;
         var sysID = t.closest('.system').attributes.id.value;
 
@@ -382,79 +379,88 @@ export class Vida
                 break;
             }
 
-        if (this.drag_info.ids && this.drag_info.ids.indexOf(id) === -1) this.drag_info.ids.push(id); // make sure we don't add it twice
         this.resetHighlights();
-        this.newHighlight( "vida-svg-overlay", this.drag_info.ids[0] );
+        this.activateHighlight(id);
 
         var viewBoxSVG = t.closest("svg");
-        var parentSVG = viewBoxSVG.parentNode;
+        var parentSVG = viewBoxSVG.parentNode.closest("svg");
         var actualSizeArr = viewBoxSVG.getAttribute("viewBox").split(" ");
-        var actualHeight = parseInt(actualSizeArr[2]);
-        var actualWidth = parseInt(actualSizeArr[3]);
+        var svgHeight = parentSVG.getAttribute('height') >> 0;
+        var actualHeight = parseInt(actualSizeArr[3]);
+        var actualWidth = parseInt(actualSizeArr[2]);
         var svgHeight = parseInt(parentSVG.getAttribute('height'));
         var svgWidth = parseInt(parentSVG.getAttribute('width'));
         var pixPerPix = ((actualHeight / svgHeight) + (actualWidth / svgWidth)) / 2;
 
-        this.drag_info = {
-            "ids": [], 
-            "x": tx, 
-            "initY": e.pageY, 
-            "svgY": ty, 
-            "pixPerPix": pixPerPix //ty / (e.pageY - $("#vida-svg-wrapper")[0].getBoundingClientRect().top)
-        };
+        this.drag_info["x"] = t.getAttribute("x") >> 0;
+        this.drag_info["svgY"] = t.getAttribute("y") >> 0;
+        this.drag_info["initY"] = e.pageY
+        this.drag_info["pixPerPix"] = pixPerPix;
+
         // we haven't started to drag yet, this might be just a selection
         this.dragging = false;
-        $(document).on("mousemove", this.boundMouseMove);
-        $(document).on("mouseup", this.boundMouseUp);
-        $(document).on("touchmove", this.boundMouseMove);
-        $(document).on("touchend", this.boundMouseUp);
+        document.addEventListener("mousemove", this.boundMouseMove);
+        document.addEventListener("mouseup", this.boundMouseUp);
+        document.addEventListener("touchmove", this.boundMouseMove);
+        document.addEventListener("touchend", this.boundMouseUp);
         console.log("Would have published highlightSelected");
     };
 
     mouseMoveListener(e)
     {
-        const scaledY = this.drag_info.svgY + (e.pageY - this.drag_info.initY) * this.drag_info.pixPerPix;
-        e.target.parentNode.setAttribute("transform", "translate(" + [0 , scaledY] + ")");
-        e.target.parentNode.style["fill-opacity"] = "0.0";
-        e.target.parentNode.style["stroke-opacity"] = "0.0";
+        const scaledY = (e.pageY - this.drag_info.initY) * this.drag_info.pixPerPix;
+        e.target.parentNode.setAttribute("transform", "translate(0, " + scaledY + ")");
 
-        // we use this to distinct from click (selection)
         this.dragging = true;
-        const editorAction = JSON.stringify({
-            action: 'drag', 
-            param: { 
-                elementId: this.drag_info["ids"][0], 
-                x: parseInt(this.drag_info.x),
-                y: parseInt(scaledY) 
-            }   
-        });
-
-        this.contactWorker('edit', [editorAction, this.clickedPage, false]); 
-        this.removeHighlight( "vida-svg-overlay", this.drag_info["ids"][0] );  
-        this.newHighlight( "vida-svg-wrapper", this.drag_info["ids"][0] ); 
         e.preventDefault();
     };
 
-    mouseUpListener()
+    mouseUpListener(e)
     {
-        $(document).unbind("mousemove", this.boundMouseMove);
-        $(document).unbind("mouseup", this.boundMouseUp);
-        $(document).unbind("touchmove", this.boundMouseMove);
-        $(document).unbind("touchend", this.boundMouseUp);
-        if (this.dragging) {
-            this.removeHighlight("vida-svg-overlay", this.drag_info["ids"][0]);
-            this.contactWorker("renderPage", [this.clickedPage, true]);
-            this.dragging = false;
-            this.drag_info = {};
+        document.removeEventListener("mousemove", this.boundMouseMove);
+        document.removeEventListener("mouseup", this.boundMouseUp);
+        document.removeEventListener("touchmove", this.boundMouseMove);
+        document.removeEventListener("touchend", this.boundMouseUp);
+
+        this.commitChanges(e.pageY);
+    }
+
+    commitChanges(finalY)
+    {
+        for (var idx = 0; idx < this.highlighted_cache.length; idx++)
+        {
+            const id = this.highlighted_cache[idx];
+            const obj = this.ui.svgOverlay.querySelector("#" + id);
+            const scaledY = this.drag_info.svgY + (finalY - this.drag_info.initY) * this.drag_info.pixPerPix;
+            obj.style["transform"] =  "translate(" + [0 , scaledY] + ")";
+            obj.style["fill"] = "#000";
+            obj.style["stroke"] = "#000";
+            
+            const editorAction = JSON.stringify({
+                action: 'drag', 
+                param: { 
+                    elementId: id, 
+                    x: parseInt(this.drag_info.x),
+                    y: parseInt(scaledY) 
+                }   
+            });
+
+            this.contactWorker('edit', [editorAction, this.clickedPage, false]); 
+
+            if (this.dragging) {
+                this.removeHighlight(id);
+                this.contactWorker("renderPage", [this.clickedPage, true]);
+                this.dragging = false;
+                this.drag_info = {};
+            }
         }
     };
 
-    newHighlight(div, id) 
+    activateHighlight(id)
     {
-        for(var idx = 0; idx < this.highlighted_cache.length; idx++)
-            if(div == this.highlighted_cache[idx][0] && id == this.highlighted_cache[idx][1]) return;
+        if (this.highlighted_cache.indexOf(id) > -1) return;
 
-        this.highlighted_cache.push([div, id]);
+        this.highlighted_cache.push(id);
         this.reapplyHighlights();
     }
 
@@ -462,43 +468,22 @@ export class Vida
     {
         for(var idx = 0; idx < this.highlighted_cache.length; idx++)
         {
-            $("#" + this.highlighted_cache[idx][0] + " * #" + this.highlighted_cache[idx][1] ).css({
-                "fill": "#ff0000",
-                "stroke": "#ff0000",
-                "fill-opacity": "1.0",
-                "stroke-opacity": "1.0"
-            });
+            var targetObj = this.ui.svgOverlay.querySelector("#" + this.highlighted_cache[idx]);
+            targetObj.setAttribute('style', "fill: #ff0000; stroke: #ff00000; fill-opacity: 1.0; stroke-opacity: 1.0;");
         }
     }
 
-    removeHighlight(div, id)
+    removeHighlight(id)
     {
-        for(var idx = 0; idx < this.highlighted_cache.length; idx++)
-        {
-            if(div == this.highlighted_cache[idx][0] && id == this.highlighted_cache[idx][1])
-            {
-                var removed = this.highlighted_cache.splice(idx, 1);
-                var css = removed[0] == "vida-svg-wrapper" ?
-                    {
-                        "fill": "#000000",
-                        "stroke": "#000000",
-                        "fill-opacity": "1.0",
-                        "stroke-opacity": "1.0"
-                    } :
-                    {
-                        "fill": "#000000",
-                        "stroke": "#000000",
-                        "fill-opacity": "0.0",
-                        "stroke-opacity": "0.0"
-                    };
-                $("#" + removed[0] + " * #" + removed[1] ).css(css);
-                return;
-            }
-        }
+        var idx = this.highlighted_cache.indexOf(id);
+        if (idx === -1) return;
+
+        var removedID = this.highlighted_cache.splice(idx, 1);
+        this.ui.svgOverlay.querySelector("#" + removedID).setAttribute('style', "fill: #000000; stroke: #0000000; fill-opacity: 0.0; stroke-opacity: 0.0;");
     }
 
     resetHighlights()
     {
-        while(this.highlighted_cache[0]) this.removeHighlight(this.highlighted_cache[0][0], this.highlighted_cache[0][1]);
+        while(this.highlighted_cache[0]) this.removeHighlight(this.highlighted_cache[0]);
     }
 }
