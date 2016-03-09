@@ -223,7 +223,7 @@ export class Vida
             pathElems[idx].style.strokeOpacity = 0.0;
             pathElems[idx].style.fillOpacity = 0.0;
         }
-        delete this.ui.svgOverlay.querySelectorAll("text"); // TODO: was originally $.remove()
+        delete this.ui.svgOverlay.querySelectorAll("text");
 
         // Add event listeners for click
         this.ui.svgOverlay.removeEventListener('click', this.boundObjectClick);
@@ -262,8 +262,8 @@ export class Vida
 
     scrollToObject(id)
     {
-        var index = $("#vida-svg-overlay " + id).closest('#vida-svg-overlay > svg').index("#vida-svg-overlay > svg");
-        scrollToPage(index);
+        var obj = this.ui.svgOverlay.querySelector("#" + id).closest('.vida-svg-wrapper');
+        scrollToPage(obj.parentNode.children.indexOf(obj));
     }
 
     scrollToPage(pageNumber)
@@ -322,15 +322,18 @@ export class Vida
 
     toggleOrientation() // TODO: this setting might not be right. IgnoreLayout instead?
     {
+        var dirControls = document.getElementsByClassName("vida-direction-control");
         if(this.verovioSettings.noLayout === 1)
         {
             this.verovioSettings.noLayout = 0;
-            $('.vida-direction-control').show();
+            for (var dIdx = 0; dIdx < dirControls.length; dIdx++)
+                dirControls[dIdx].style['display'] = 'block';
         }
         else
         {
             this.verovioSettings.noLayout = 1;
-            $('.vida-direction-control').hide();
+            for (var dIdx = 0; dIdx < dirControls.length; dIdx++)
+                dirControls[dIdx].style['display'] = 'none';
         }
 
         this.refreshVerovio();
@@ -367,7 +370,6 @@ export class Vida
 
     mouseDownListener(e)
     {
-        console.log(e.target);
         var t = e.target;
         var id = t.parentNode.attributes.id.value;
         var sysID = t.closest('.system').attributes.id.value;
@@ -385,12 +387,9 @@ export class Vida
         var viewBoxSVG = t.closest("svg");
         var parentSVG = viewBoxSVG.parentNode.closest("svg");
         var actualSizeArr = viewBoxSVG.getAttribute("viewBox").split(" ");
-        var svgHeight = parentSVG.getAttribute('height') >> 0;
         var actualHeight = parseInt(actualSizeArr[3]);
-        var actualWidth = parseInt(actualSizeArr[2]);
         var svgHeight = parseInt(parentSVG.getAttribute('height'));
-        var svgWidth = parseInt(parentSVG.getAttribute('width'));
-        var pixPerPix = ((actualHeight / svgHeight) + (actualWidth / svgWidth)) / 2;
+        var pixPerPix = (actualHeight / svgHeight);
 
         this.drag_info["x"] = t.getAttribute("x") >> 0;
         this.drag_info["svgY"] = t.getAttribute("y") >> 0;
@@ -398,18 +397,19 @@ export class Vida
         this.drag_info["pixPerPix"] = pixPerPix;
 
         // we haven't started to drag yet, this might be just a selection
-        this.dragging = false;
         document.addEventListener("mousemove", this.boundMouseMove);
         document.addEventListener("mouseup", this.boundMouseUp);
         document.addEventListener("touchmove", this.boundMouseMove);
         document.addEventListener("touchend", this.boundMouseUp);
+        this.dragging = false;
         console.log("Would have published highlightSelected");
     };
 
     mouseMoveListener(e)
     {
         const scaledY = (e.pageY - this.drag_info.initY) * this.drag_info.pixPerPix;
-        e.target.parentNode.setAttribute("transform", "translate(0, " + scaledY + ")");
+        for (var idx = 0; idx < this.highlighted_cache.length; idx++)
+            this.ui.svgOverlay.querySelector("#" + this.highlighted_cache[idx]).setAttribute("transform", "translate(0, " + scaledY + ")");
 
         this.dragging = true;
         e.preventDefault();
@@ -422,6 +422,7 @@ export class Vida
         document.removeEventListener("touchmove", this.boundMouseMove);
         document.removeEventListener("touchend", this.boundMouseUp);
 
+        if (!this.dragging) return;
         this.commitChanges(e.pageY);
     }
 
@@ -446,13 +447,14 @@ export class Vida
             });
 
             this.contactWorker('edit', [editorAction, this.clickedPage, false]); 
+            if (this.dragging) this.removeHighlight(id);
+        }
 
-            if (this.dragging) {
-                this.removeHighlight(id);
-                this.contactWorker("renderPage", [this.clickedPage, true]);
-                this.dragging = false;
-                this.drag_info = {};
-            }
+        if (this.dragging)
+        {
+            this.contactWorker("renderPage", [this.clickedPage, true]);
+            this.dragging = false;
+            this.drag_info = {};
         }
     };
 
@@ -462,6 +464,7 @@ export class Vida
 
         this.highlighted_cache.push(id);
         this.reapplyHighlights();
+        this.hideNote(id);
     }
 
     reapplyHighlights()
@@ -473,12 +476,18 @@ export class Vida
         }
     }
 
+    hideNote(id)
+    {
+        this.ui.svgWrapper.querySelector("#" + id).setAttribute('style', "fill-opacity: 0.0; stroke-opacity: 0.0;");
+    }
+
     removeHighlight(id)
     {
         var idx = this.highlighted_cache.indexOf(id);
         if (idx === -1) return;
 
         var removedID = this.highlighted_cache.splice(idx, 1);
+        this.ui.svgWrapper.querySelector("#" + id).setAttribute('style', "fill-opacity: 1.0; stroke-opacity: 1.0;");
         this.ui.svgOverlay.querySelector("#" + removedID).setAttribute('style', "fill: #000000; stroke: #0000000; fill-opacity: 0.0; stroke-opacity: 0.0;");
     }
 
