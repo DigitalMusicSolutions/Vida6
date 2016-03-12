@@ -16,11 +16,11 @@ export class Vida
             popup: undefined
         };
         // initializes layout of the parent element and Verovio communication; "private function"
+        this.bindListeners();
         this.initializeLayoutAndWorker(options);
 
         this.resizeTimer = undefined;
         this.updateDims();
-        window.addEventListener('resize.vida', this.resizeComponents);
         this.verovioSettings = {
             pageHeight: 100,
             pageWidth: 100,
@@ -58,6 +58,33 @@ export class Vida
         this.highlighted_cache = [];
     }
 
+    destroy()
+    {
+        window.addEventListener('resize', this.resizeComponents);
+
+        this.ui.svgOverlay.removeEventListener('scroll', this.boundSyncScroll); 
+        this.ui.nextPage.removeEventListener('click', this.boundGotoNext);
+        this.ui.prevPage.removeEventListener('click', this.boundGotoPrev);
+        this.ui.orientationToggle.removeEventListener('click', this.boundOrientationToggle);
+        this.ui.zoomIn.removeEventListener('click', this.boundZoomIn);
+        this.ui.zoomOut.removeEventListener('click', this.boundZoomOut);
+
+        this.ui.svgOverlay.removeEventListener('click', this.boundObjectClick);
+        const notes = this.ui.svgOverlay.querySelectorAll(".note");
+        for (idx = 0; idx < notes.length; idx++)
+        {
+            const note = notes[idx];
+
+            note.removeEventListener('mousedown', this.boundMouseDown);
+            note.removeEventListener('touchstart', this.boundMouseDown);
+        }
+
+        document.removeEventListener("mousemove", this.boundMouseMove);
+        document.removeEventListener("mouseup", this.boundMouseUp);
+        document.removeEventListener("touchmove", this.boundMouseMove);
+        document.removeEventListener("touchend", this.boundMouseUp);
+    }
+
     /**
      * Init code separated out for cleanliness' sake
      */
@@ -77,6 +104,11 @@ export class Vida
         '<div id="vida-svg-wrapper" class="vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
         '<div id="vida-svg-overlay" class="vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
         '<div id="vida-loading-popup"></div>';
+        
+        window.addEventListener('resize', this.resizeComponents);
+
+        // If this has already been instantiated , undo events
+        if (this.ui && this.ui.svgOverlay) this.destroy();
 
         // Set up the UI object
         this.ui.svgWrapper = document.getElementById("vida-svg-wrapper");
@@ -89,8 +121,15 @@ export class Vida
         this.ui.zoomIn = document.getElementById("vida-zoom-in");
         this.ui.zoomOut = document.getElementById("vida-zoom-out");
 
-        // Initialize all the listeners on permanent objects
-        this.initializeOneTimeListeners(self);
+        // synchronized scrolling between svg overlay and wrapper
+        this.ui.svgOverlay.addEventListener('scroll', this.boundSyncScroll); 
+
+        // control bar events
+        this.ui.nextPage.addEventListener('click', this.boundGotoNext);
+        this.ui.prevPage.addEventListener('click', this.boundGotoPrev);
+        this.ui.orientationToggle.addEventListener('click', this.boundOrientationToggle);
+        this.ui.zoomIn.addEventListener('click', this.boundZoomIn);
+        this.ui.zoomOut.addEventListener('click', this.boundZoomOut);
 
         // Initialize the Verovio WebWorker wrapper
         this.verovioWorker = new Worker(options.workerLocation); // the threaded wrapper for the Verovio object
@@ -140,29 +179,21 @@ export class Vida
         };
     }
 
-    initializeOneTimeListeners()
+    // Necessary for how ES6 "this" works
+    bindListeners()
     {
-        // synchronized scrolling between svg overlay and wrapper
         this.boundSyncScroll = (evt) => this.syncScroll(evt);
-        this.ui.svgOverlay.addEventListener('scroll', this.boundSyncScroll); // todo: proxy these
-
-        // control bar events
         this.boundGotoNext = (evt) => this.gotoNextPage(evt);
-        this.ui.nextPage.addEventListener('click', this.boundGotoNext);
         this.boundGotoPrev = (evt) => this.gotoPrevPage(evt);
-        this.ui.prevPage.addEventListener('click', this.boundGotoPrev);
         this.boundOrientationToggle = (evt) => this.toggleOrientation(evt);
-        this.ui.orientationToggle.addEventListener('click', this.boundOrientationToggle);
         this.boundZoomIn = (evt) => this.zoomIn(evt);
-        this.ui.zoomIn.addEventListener('click', this.boundZoomIn);
         this.boundZoomOut = (evt) => this.zoomOut(evt);
-        this.ui.zoomOut.addEventListener('click', this.boundZoomOut);
         this.boundObjectClick = (evt) => this.objectClickListener(evt);
-
 
         this.boundMouseDown = (evt) => this.mouseDownListener(evt);
         this.boundMouseMove = (evt) => this.mouseMoveListener(evt);
         this.boundMouseUp = (evt) => this.mouseUpListener(evt);
+
     }
 
     contactWorker(messageType, data)
