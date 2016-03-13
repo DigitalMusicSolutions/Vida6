@@ -1,10 +1,13 @@
 /**
  * Vida6 - An ES6 controller for Verovio
  *
- * Required options on initialization:
+ * Required options on initialization (or set later with setDefaults()):
  * -parentElement: a JS DOM API node in which to crete the Vida UI
  * -workerLocation: location of the verovioWorker.js script included in this repo; relative to vida.js or absolute-pathed
  * -verovioLocation: location of the verovio toolkit copy you wish to use, relative to verovioWorker.js or absolute-pathed
+ *
+ * Optional options:
+ * -debug: will print out console errors when things go wrong
  */
 
 export class Vida 
@@ -12,28 +15,20 @@ export class Vida
     //options needs to include workerLocation and parentElement
     constructor(options)
     {
-        if (!options.parentElement)
-            console.error("Vida must be instantiated with a parentElement property.");
-        if (!options.workerLocation)
-            console.error("Vida must be instantiated with a workerLocation property.");
-        if (!options.verovioLocation)
-            console.error("Vida must be instantiated with a verovioLocation property.");
-        
-        // Set up UI and layout
-        this.ui = {
-            parentElement: options.parentElement, // must be DOM node
-            svgWrapper: undefined,
-            svgOverlay: undefined,
-            controls: undefined,
-            popup: undefined
-        };
+        options = options || {};
+        this.debug = options.debug;
+        this.parentElement = options.parentElement;
+        this.workerLocation = options.workerLocation;
+        this.verovioLocation = options.verovioLocation;
 
-        // initializes layout of the parent element and Verovio communication; "private function"
+        // One of the little quirks of writing in ES6, bind events
         this.bindListeners();
-        this.initializeLayoutAndWorker(options);
 
+        // initializes ui underneath the parent element, as well as Verovio communication
+        this.initializeLayoutAndWorker();
+
+        // "Global" variables
         this.resizeTimer = undefined;
-        this.updateDims();
         this.verovioSettings = {
             pageHeight: 100,
             pageWidth: 100,
@@ -44,10 +39,9 @@ export class Vida
             ignoreLayout: 1,
             adjustPageHeight: 1
         };
-        this.mei = undefined;
-        this.verovioContent = undefined;
-        this.pageCount = 0;
-        this.systemData = [
+        this.mei = undefined; // saved in Vida as well as the worker, unused for now
+        this.verovioContent = undefined; // svg output
+        this.systemData = [ // stores offsets and ids of each system
             /* {
                 'topOffset':
                 'id': 
@@ -58,17 +52,27 @@ export class Vida
         this.totalSystems = 0; // total number of system objects
 
         // For dragging
-        this.clickedPage;
+        this.clickedPage; // last clicked page
         this.drag_info = {
             /*
-            "x": tx, 
-            "initY": e.pageY, 
-            "svgY": ty, 
-            "pixPerPix": pixPerPix
+            "x": position of clicked note
+            "initY": initial Y position
+            "svgY": scaled initial Y position 
+            "pixPerPix": conversion between the above two
             */
         };
         this.dragging;
         this.highlighted_cache = [];
+    }
+
+    setDefaults(options)
+    {
+        this.parentElement = options.parentElement;
+        this.workerLocation = options.workerLocation;
+        this.verovioLocation = options.verovioLocation;
+
+        // Attempt to re-run layout init
+        this.initializeLayoutAndWorker();
     }
 
     destroy()
@@ -101,8 +105,26 @@ export class Vida
     /**
      * Init code separated out for cleanliness' sake
      */
-    initializeLayoutAndWorker(options)
+    initializeLayoutAndWorker()
     {
+        if (!this.parentElement || !this.workerLocation || !this.verovioLocation)
+        {
+            if (this.debug)
+                console.error("Vida could not be fully instantiated. Please set whatever is undefined of the following three using (vida).setDefaults({}):\n" + 
+                    "parentElement: " + this.parentElement + "\n" +
+                    "workerLocation: " + this.workerLocation + "\n" +
+                    "verovioLocation: " + this.verovioLocation);
+            return false;
+        }
+
+        this.ui = {
+            parentElement: this.parentElement, // must be DOM node
+            svgWrapper: undefined,
+            svgOverlay: undefined,
+            controls: undefined,
+            popup: undefined
+        };
+
         // Set up the base layout
         this.ui.parentElement.innerHTML = '<div id="vida-page-controls">' +
             '<div id="vida-prev-page" class="vida-direction-control"></div>' +
@@ -144,16 +166,18 @@ export class Vida
         this.ui.zoomIn.addEventListener('click', this.boundZoomIn);
         this.ui.zoomOut.addEventListener('click', this.boundZoomOut);
 
+        // simulate a resize event
+        this.updateDims();
+
         // Initialize the Verovio WebWorker wrapper
-        this.verovioWorker = new Worker(options.workerLocation); // the threaded wrapper for the Verovio object
-        this.verovioWorker.postMessage(['setVerovio', options.verovioLocation])
+        this.verovioWorker = new Worker(this.workerLocation); // the threaded wrapper for the Verovio object
+        this.verovioWorker.postMessage(['setVerovio', this.verovioLocation])
         var self = this; // for referencing it inside onmessage
         this.verovioWorker.onmessage = function(event){
             const vidaOffset = self.ui.svgWrapper.getBoundingClientRect().top;
             switch (event.data[0]){ // all cases have the rest of the array returned notated in a comment
                 case "dataLoaded": // [page count]
-                    self.pageCount = event.data[1];
-                    for(var pIdx = 0; pIdx < self.pageCount; pIdx++)
+                    for(var pIdx = 0; pIdx < event.data[1]; pIdx++)
                     {
                         self.ui.svgWrapper.innerHTML += "<div class='vida-system-wrapper' data-index='" + pIdx + "'></div>";
                         self.contactWorker("renderPage", [pIdx]);
@@ -161,6 +185,7 @@ export class Vida
                     break;
 
                 case "returnPage": // [page index, rendered svg]
+                    console.log(event.data);
                     const systemWrapper = document.querySelector(".vida-system-wrapper[data-index='" + event.data[1] + "']");
                     systemWrapper.innerHTML = event.data[2];
 
