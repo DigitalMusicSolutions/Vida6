@@ -1,5 +1,6 @@
 /*
 Incoming:
+-setVerovio (verovioLocation)
 -loadData (verovioOptions, dataToLoad)
 -renderPage (pageIndex, initOverlay=true)
 -edit (editorAction, pageIndex, initOverlay)
@@ -11,13 +12,24 @@ Outgoing:
 -mei (mei)
 */
 
-importScripts("verovio.min.js");
-var vrvToolkit = new verovio.toolkit();
+var vrvToolkit;
+var vrvSet = false;
 
 this.addEventListener('message', function(event){
     var rendered;
+    if (!vrvSet && event.data[0] != "setVerovio") {
+        postMessage(["setVerovio must be called before the verovioWorker is used!"])
+        console.error("setVerovio must be called before the verovioWorker is used!");
+        return false;
+    }
+
     switch (event.data[0])
     {
+        case "setVerovio":
+            importScripts(event.data[1]);
+            vrvToolkit = new verovio.toolkit();
+            vrvSet = true;
+
         case "loadData":
             vrvToolkit.loadData(event.data[1]);
             postMessage(['dataLoaded', vrvToolkit.getPageCount()]);

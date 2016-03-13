@@ -1,5 +1,10 @@
 /**
  * Vida6 - An ES6 controller for Verovio
+ *
+ * Required options on initialization:
+ * -parentElement: a JS DOM API node in which to crete the Vida UI
+ * -workerLocation: location of the verovioWorker.js script included in this repo; relative to vida.js or absolute-pathed
+ * -verovioLocation: location of the verovio toolkit copy you wish to use, relative to verovioWorker.js or absolute-pathed
  */
 
 export class Vida 
@@ -7,6 +12,13 @@ export class Vida
     //options needs to include workerLocation and parentElement
     constructor(options)
     {
+        if (!options.parentElement)
+            console.error("Vida must be instantiated with a parentElement property.");
+        if (!options.workerLocation)
+            console.error("Vida must be instantiated with a workerLocation property.");
+        if (!options.verovioLocation)
+            console.error("Vida must be instantiated with a verovioLocation property.");
+        
         // Set up UI and layout
         this.ui = {
             parentElement: options.parentElement, // must be DOM node
@@ -15,6 +27,7 @@ export class Vida
             controls: undefined,
             popup: undefined
         };
+
         // initializes layout of the parent element and Verovio communication; "private function"
         this.bindListeners();
         this.initializeLayoutAndWorker(options);
@@ -60,7 +73,7 @@ export class Vida
 
     destroy()
     {
-        window.addEventListener('resize', this.resizeComponents);
+        window.addEventListener('resize', this.boundResize);
 
         this.ui.svgOverlay.removeEventListener('scroll', this.boundSyncScroll); 
         this.ui.nextPage.removeEventListener('click', this.boundGotoNext);
@@ -104,8 +117,8 @@ export class Vida
         '<div id="vida-svg-wrapper" class="vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
         '<div id="vida-svg-overlay" class="vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
         '<div id="vida-loading-popup"></div>';
-        
-        window.addEventListener('resize', this.resizeComponents);
+
+        window.addEventListener('resize', this.boundResize);
 
         // If this has already been instantiated , undo events
         if (this.ui && this.ui.svgOverlay) this.destroy();
@@ -133,6 +146,7 @@ export class Vida
 
         // Initialize the Verovio WebWorker wrapper
         this.verovioWorker = new Worker(options.workerLocation); // the threaded wrapper for the Verovio object
+        this.verovioWorker.postMessage(['setVerovio', options.verovioLocation])
         var self = this; // for referencing it inside onmessage
         this.verovioWorker.onmessage = function(event){
             const vidaOffset = self.ui.svgWrapper.getBoundingClientRect().top;
@@ -194,6 +208,7 @@ export class Vida
         this.boundMouseMove = (evt) => this.mouseMoveListener(evt);
         this.boundMouseUp = (evt) => this.mouseUpListener(evt);
 
+        this.boundResize = (evt) => this.resizeComponents(evt);
     }
 
     contactWorker(messageType, data)
