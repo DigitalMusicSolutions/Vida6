@@ -29,6 +29,7 @@ this.addEventListener('message', function(event){
             importScripts(event.data[1]);
             vrvToolkit = new verovio.toolkit();
             vrvSet = true;
+            break;
 
         case "loadData":
             vrvToolkit.loadData(event.data[1]);
