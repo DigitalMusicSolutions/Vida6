@@ -1,5 +1,13 @@
 /**
  * Vida6 - An ES6 controller for Verovio
+ *
+ * Required options on initialization (or set later with setDefaults()):
+ * -parentElement: a JS DOM API node in which to crete the Vida UI
+ * -workerLocation: location of the verovioWorker.js script included in this repo; relative to vida.js or absolute-pathed
+ * -verovioLocation: location of the verovio toolkit copy you wish to use, relative to verovioWorker.js or absolute-pathed
+ *
+ * Optional options:
+ * -debug: will print out console errors when things go wrong
  */
 
 export class VidaController
@@ -14,20 +22,20 @@ export class VidaView
     // options needs to include workerLocation and parentElement
     constructor(options)
     {
-        // Set up UI and layout
-        this.ui = {
-            parentElement: options.parentElement, // must be DOM node
-            svgWrapper: undefined,
-            svgOverlay: undefined,
-            controls: undefined,
-            popup: undefined
-        };
-        // initializes layout of the parent element and Verovio communication; "private function"
-        this.initializeLayoutAndWorker(options);
+        options = options || {};
+        this.debug = options.debug;
+        this.parentElement = options.parentElement;
+        this.workerLocation = options.workerLocation;
+        this.verovioLocation = options.verovioLocation;
 
+        // One of the little quirks of writing in ES6, bind events
+        this.bindListeners();
+
+        // initializes ui underneath the parent element, as well as Verovio communication
+        this.initializeLayoutAndWorker();
+
+        // "Global" variables
         this.resizeTimer = undefined;
-        this.updateDims();
-        window.addEventListener('resize.vida', this.resizeComponents);
         this.verovioSettings = {
             pageHeight: 100,
             pageWidth: 100,
@@ -38,10 +46,9 @@ export class VidaView
             ignoreLayout: 1,
             adjustPageHeight: 1
         };
-        this.mei = undefined;
-        this.verovioContent = undefined;
-        this.pageCount = 0;
-        this.systemData = [
+        this.mei = undefined; // saved in Vida as well as the worker, unused for now
+        this.verovioContent = undefined; // svg output
+        this.systemData = [ // stores offsets and ids of each system
             /* {
                 'topOffset':
                 'id': 
@@ -52,13 +59,13 @@ export class VidaView
         this.totalSystems = 0; // total number of system objects
 
         // For dragging
-        this.clickedPage;
+        this.clickedPage; // last clicked page
         this.drag_info = {
             /*
-            "x": tx, 
-            "initY": e.pageY, 
-            "svgY": ty, 
-            "pixPerPix": pixPerPix
+            "x": position of clicked note
+            "initY": initial Y position
+            "svgY": scaled initial Y position 
+            "pixPerPix": conversion between the above two
             */
         };
         this.dragging;
@@ -69,11 +76,66 @@ export class VidaView
         this.tickets = {};
     }
 
+    setDefaults(options)
+    {
+        this.parentElement = options.parentElement;
+        this.workerLocation = options.workerLocation;
+        this.verovioLocation = options.verovioLocation;
+
+        // Attempt to re-run layout init
+        this.initializeLayoutAndWorker();
+    }
+
+    destroy()
+    {
+        window.addEventListener('resize', this.boundResize);
+
+        this.ui.svgOverlay.removeEventListener('scroll', this.boundSyncScroll); 
+        this.ui.nextPage.removeEventListener('click', this.boundGotoNext);
+        this.ui.prevPage.removeEventListener('click', this.boundGotoPrev);
+        this.ui.orientationToggle.removeEventListener('click', this.boundOrientationToggle);
+        this.ui.zoomIn.removeEventListener('click', this.boundZoomIn);
+        this.ui.zoomOut.removeEventListener('click', this.boundZoomOut);
+
+        this.ui.svgOverlay.removeEventListener('click', this.boundObjectClick);
+        const notes = this.ui.svgOverlay.querySelectorAll(".note");
+        for (idx = 0; idx < notes.length; idx++)
+        {
+            const note = notes[idx];
+
+            note.removeEventListener('mousedown', this.boundMouseDown);
+            note.removeEventListener('touchstart', this.boundMouseDown);
+        }
+
+        document.removeEventListener("mousemove", this.boundMouseMove);
+        document.removeEventListener("mouseup", this.boundMouseUp);
+        document.removeEventListener("touchmove", this.boundMouseMove);
+        document.removeEventListener("touchend", this.boundMouseUp);
+    }
+
     /**
      * Init code separated out for cleanliness' sake
      */
-    initializeLayoutAndWorker(options)
+    initializeLayoutAndWorker()
     {
+        if (!this.parentElement || !this.workerLocation || !this.verovioLocation)
+        {
+            if (this.debug)
+                console.error("Vida could not be fully instantiated. Please set whatever is undefined of the following three using (vida).setDefaults({}):\n" + 
+                    "parentElement: " + this.parentElement + "\n" +
+                    "workerLocation: " + this.workerLocation + "\n" +
+                    "verovioLocation: " + this.verovioLocation);
+            return false;
+        }
+
+        this.ui = {
+            parentElement: this.parentElement, // must be DOM node
+            svgWrapper: undefined,
+            svgOverlay: undefined,
+            controls: undefined,
+            popup: undefined
+        };
+
         // Set up the base layout
         this.ui.parentElement.innerHTML = '<div id="vida-page-controls">' +
             '<div id="vida-prev-page" class="vida-direction-control"></div>' +
@@ -89,6 +151,11 @@ export class VidaView
         '<div id="vida-svg-overlay" class="vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
         '<div id="vida-loading-popup"></div>';
 
+        window.addEventListener('resize', this.boundResize);
+
+        // If this has already been instantiated , undo events
+        if (this.ui && this.ui.svgOverlay) this.destroy();
+
         // Set up the UI object
         this.ui.svgWrapper = document.getElementById("vida-svg-wrapper");
         this.ui.svgOverlay = document.getElementById("vida-svg-overlay");
@@ -100,11 +167,22 @@ export class VidaView
         this.ui.zoomIn = document.getElementById("vida-zoom-in");
         this.ui.zoomOut = document.getElementById("vida-zoom-out");
 
-        // Initialize all the listeners on permanent objects
-        this.initializeOneTimeListeners(self);
+        // synchronized scrolling between svg overlay and wrapper
+        this.ui.svgOverlay.addEventListener('scroll', this.boundSyncScroll); 
+
+        // control bar events
+        this.ui.nextPage.addEventListener('click', this.boundGotoNext);
+        this.ui.prevPage.addEventListener('click', this.boundGotoPrev);
+        this.ui.orientationToggle.addEventListener('click', this.boundOrientationToggle);
+        this.ui.zoomIn.addEventListener('click', this.boundZoomIn);
+        this.ui.zoomOut.addEventListener('click', this.boundZoomOut);
+
+        // simulate a resize event
+        this.updateDims();
 
         // Initialize the Verovio WebWorker wrapper
-        this.verovioWorker = new Worker(options.workerLocation); // the threaded wrapper for the Verovio object
+        this.verovioWorker = new Worker(this.workerLocation); // the threaded wrapper for the Verovio object
+        this.verovioWorker.postMessage(['setVerovio', this.verovioLocation])
         var self = this; // for referencing it inside onmessage
         this.verovioWorker.onmessage = function(event){
             const vidaOffset = self.ui.svgWrapper.getBoundingClientRect().top;
@@ -113,8 +191,7 @@ export class VidaView
             let params = event.data[2];
             switch (eventType){ // all cases have the rest of the array returned notated in a comment
                 case "dataLoaded": // [page count]
-                    self.pageCount = params.pageCount;
-                    for(var pIdx = 0; pIdx < self.pageCount; pIdx++)
+                    for(var pIdx = 0; pIdx < params.pageCount; pIdx++)
                     {
                         self.ui.svgWrapper.innerHTML += "<div class='vida-system-wrapper' data-index='" + pIdx + "'></div>";
                         self.contactWorker("renderPage", {'pageIndex': pIdx});
@@ -155,29 +232,22 @@ export class VidaView
         };
     }
 
-    initializeOneTimeListeners()
+    // Necessary for how ES6 "this" works
+    bindListeners()
     {
-        // synchronized scrolling between svg overlay and wrapper
         this.boundSyncScroll = (evt) => this.syncScroll(evt);
-        this.ui.svgOverlay.addEventListener('scroll', this.boundSyncScroll); // todo: proxy these
-
-        // control bar events
         this.boundGotoNext = (evt) => this.gotoNextPage(evt);
-        this.ui.nextPage.addEventListener('click', this.boundGotoNext);
         this.boundGotoPrev = (evt) => this.gotoPrevPage(evt);
-        this.ui.prevPage.addEventListener('click', this.boundGotoPrev);
         this.boundOrientationToggle = (evt) => this.toggleOrientation(evt);
-        this.ui.orientationToggle.addEventListener('click', this.boundOrientationToggle);
         this.boundZoomIn = (evt) => this.zoomIn(evt);
-        this.ui.zoomIn.addEventListener('click', this.boundZoomIn);
         this.boundZoomOut = (evt) => this.zoomOut(evt);
-        this.ui.zoomOut.addEventListener('click', this.boundZoomOut);
         this.boundObjectClick = (evt) => this.objectClickListener(evt);
-
 
         this.boundMouseDown = (evt) => this.mouseDownListener(evt);
         this.boundMouseMove = (evt) => this.mouseMoveListener(evt);
         this.boundMouseUp = (evt) => this.mouseUpListener(evt);
+
+        this.boundResize = (evt) => this.resizeComponents(evt);
     }
 
     contactWorker(messageType, params, callback)
@@ -311,6 +381,7 @@ export class VidaView
         const self = this;
         this.resizeTimer = setTimeout(function ()
         {
+            console.log(self);
             self.refreshVerovio();
         }, 200);
     }
