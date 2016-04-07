@@ -12,49 +12,57 @@ Outgoing:
 */
 
 importScripts("verovio.min.js");
-var vrvToolkit = new verovio.toolkit();
+const vrvToolkit = new verovio.toolkit();
+
+const contactCaller = function(message, ticket, params)
+{
+    postMessage([message, ticket, params]);
+};
 
 this.addEventListener('message', function(event){
     var rendered;
-    switch (event.data[0])
+    var messageType = event.data[0];
+    var ticket = event.data[1];
+    var params = event.data[2];
+    switch (messageType)
     {
         case "loadData":
-            vrvToolkit.loadData(event.data[1]);
-            postMessage(['dataLoaded', vrvToolkit.getPageCount()]);
+            vrvToolkit.loadData(params.mei);
+            contactCaller('dataLoaded', ticket, {'pageCount': vrvToolkit.getPageCount()});
             break;
 
         case "setOptions":
-            vrvToolkit.setOptions(event.data[1]);
+            vrvToolkit.setOptions(params.options);
             break;
 
         case "renderPage": // page index comes in 0-indexed and should be returned 0-indexed
             try {
-                rendered = vrvToolkit.renderPage(event.data[1] + 1);
+                rendered = vrvToolkit.renderPage(params.pageIndex + 1);
             }
             catch (e) {
-                postMessage(["Render of page " + event.data[1] + " failed:" + e]);
+                contactCaller('error', ticket, {'error': "Render of page " + params.pageIndex + " failed:" + e});
             }
-            postMessage(["returnPage", event.data[1], rendered, event.data[2] || true]);
+            contactCaller("returnPage", ticket, {'pageIndex': params.pageIndex, 'svg': rendered, 'notNeededSoon': params.notNeededSoon || true});
             break;
 
         case "edit":
             //event.data{1: editorAction, 2: 0-indexed page index, 3: init overlay (to be passed back)}
-            var res = vrvToolkit.edit(event.data[1]);
+            var res = vrvToolkit.edit(params.action);
             try {
-                rendered = vrvToolkit.renderPage(event.data[2] + 1);
+                rendered = vrvToolkit.renderPage(params.pageIndex + 1);
             }
             catch (e) {
-                postMessage(["Render of page " + event.data[2] + " failed:" + e]);
+                contactCaller('error', ticket, {'error': "Render of page " + params.pageIndex + " failed:" + e});
             }
-            postMessage(["returnPage", event.data[2], rendered, event.data[3]]);
+            contactCaller("returnPage", ticket, {'pageIndex': params.pageIndex, 'svg': rendered, 'notNeededSoon': params.notNeededSoon});
             break;
 
         case "mei":
-            postMessage(["mei", vrvToolkit.getMEI()]);
+            contactCaller("mei", ticket, {'mei': vrvToolkit.getMEI()});
             break;
 
         default:
-            postMessage(["Did not recognize that input", event.data]);
+            contactCaller('error', ticket, {'error': "Did not recognize input" + event.data});
             break;
     }
 }, false);

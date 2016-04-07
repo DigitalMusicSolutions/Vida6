@@ -2,9 +2,16 @@
  * Vida6 - An ES6 controller for Verovio
  */
 
-export class Vida 
+export class VidaController
 {
-    //options needs to include workerLocation and parentElement
+    constructor(options)
+    {
+    }
+}
+
+export class VidaView 
+{
+    // options needs to include workerLocation and parentElement
     constructor(options)
     {
         // Set up UI and layout
@@ -56,6 +63,10 @@ export class Vida
         };
         this.dragging;
         this.highlighted_cache = [];
+        // this.verovioWorker = options.controller.verovioWorker;
+
+        this.ticketID = 0;
+        this.tickets = {};
     }
 
     /**
@@ -97,19 +108,22 @@ export class Vida
         var self = this; // for referencing it inside onmessage
         this.verovioWorker.onmessage = function(event){
             const vidaOffset = self.ui.svgWrapper.getBoundingClientRect().top;
-            switch (event.data[0]){ // all cases have the rest of the array returned notated in a comment
+            let eventType = event.data[0];
+            let ticket = event.data[1];
+            let params = event.data[2];
+            switch (eventType){ // all cases have the rest of the array returned notated in a comment
                 case "dataLoaded": // [page count]
-                    self.pageCount = event.data[1];
+                    self.pageCount = params.pageCount;
                     for(var pIdx = 0; pIdx < self.pageCount; pIdx++)
                     {
                         self.ui.svgWrapper.innerHTML += "<div class='vida-system-wrapper' data-index='" + pIdx + "'></div>";
-                        self.contactWorker("renderPage", [pIdx]);
+                        self.contactWorker("renderPage", {'pageIndex': pIdx});
                     }
                     break;
 
                 case "returnPage": // [page index, rendered svg]
-                    const systemWrapper = document.querySelector(".vida-system-wrapper[data-index='" + event.data[1] + "']");
-                    systemWrapper.innerHTML = event.data[2];
+                    const systemWrapper = document.querySelector(".vida-system-wrapper[data-index='" + params.pageIndex + "']");
+                    systemWrapper.innerHTML = params.svg;
 
                     // Add data about the available systems here
                     const systems = self.ui.svgWrapper.querySelectorAll('g[class=system]');
@@ -123,18 +137,19 @@ export class Vida
                     self.totalSystems = self.systemData.length;
 
                     // create the overlay, save the content, remove the popup, make sure highlights are up to date
-                    if(event.data[3]) self.createOverlay();
+                    if(params.notNeededSoon) self.createOverlay();
                     self.verovioContent = self.ui.svgWrapper.innerHTML;
                     self.ui.popup.remove();
                     self.reapplyHighlights();
                     break;
 
                 case "mei": // [mei as interpreted by Verovio]
-                    mei = event.data[1];
+                    mei = params.mei;
                     break;
 
                 default:
-                    console.log("Message from Verovio of type", event.data[0] + ":", event.data);
+                case "error":
+                    console.log("Error message from Verovio:", params);
                     break;
             }
         };
@@ -165,9 +180,12 @@ export class Vida
         this.boundMouseUp = (evt) => this.mouseUpListener(evt);
     }
 
-    contactWorker(messageType, data)
+    contactWorker(messageType, params, callback)
     {
-        this.verovioWorker.postMessage([messageType].concat(data || []));
+        // array passed is [messageType, ticketNumber, dataObject]
+        this.tickets[this.ticketID] = callback;
+        this.verovioWorker.postMessage([messageType, this.ticketID, params]);
+        this.ticketID++;
     }
 
     updateDims()
@@ -200,8 +218,15 @@ export class Vida
         this.ui.svgOverlay.innerHTML = this.ui.svgWrapper.innerHTML = this.verovioContent = "";
         this.verovioSettings.pageHeight = Math.max(this.ui.svgWrapper.clientHeight * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100); // minimal value required by Verovio
         this.verovioSettings.pageWidth = Math.max(this.ui.svgWrapper.clientWidth * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100); // idem     
-        this.contactWorker('setOptions', JSON.stringify(this.verovioSettings));
-        this.contactWorker('loadData', this.mei + "\n");
+        this.contactWorker('setOptions', {'options': JSON.stringify(this.verovioSettings)});
+        this.contactWorker('loadData', {'mei': this.mei + "\n"}, (event) => {
+            self.pageCount = event.data[1];
+            for(var pIdx = 0; pIdx < self.pageCount; pIdx++)
+            {
+                self.ui.svgWrapper.innerHTML += "<div class='vida-system-wrapper' data-index='" + pIdx + "'></div>";
+                self.contactWorker("renderPage", {'pageIndex': pIdx});
+            }
+        });
     }
 
     createOverlay()
@@ -446,13 +471,13 @@ export class Vida
                 }   
             });
 
-            this.contactWorker('edit', [editorAction, this.clickedPage, false]); 
+            this.contactWorker('edit', {'action': editorAction, 'pageIndex': this.clickedPage, 'notNeededSoon': false}); 
             if (this.dragging) this.removeHighlight(id);
         }
 
         if (this.dragging)
         {
-            this.contactWorker("renderPage", [this.clickedPage, true]);
+            this.contactWorker("renderPage", {'pageIndex': this.clickedPage, 'notNeededSoon': true});
             this.dragging = false;
             this.drag_info = {};
         }
