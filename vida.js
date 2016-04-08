@@ -17,7 +17,7 @@ export class VidaController
     }
 }
 
-export class VidaView 
+export class VidaView
 {
     // options needs to include workerLocation and parentElement
     constructor(options)
@@ -27,6 +27,9 @@ export class VidaView
         this.parentElement = options.parentElement;
         this.workerLocation = options.workerLocation;
         this.verovioLocation = options.verovioLocation;
+
+        this.ticketID = 0;
+        this.tickets = {};
 
         // One of the little quirks of writing in ES6, bind events
         this.bindListeners();
@@ -42,7 +45,7 @@ export class VidaView
             inputFormat: 'mei', // change at thy own risk
             scale: 40,
             border: 50,
-            noLayout: 0,    //1 or 0 (NOT boolean, but mimicing it) for whether the page will display horizontally or vertically
+            noLayout: 0,    // 1 or 0 (NOT boolean, but mimicing it) for whether the page will display horizontally or vertically
             ignoreLayout: 1,
             adjustPageHeight: 1
         };
@@ -51,29 +54,28 @@ export class VidaView
         this.systemData = [ // stores offsets and ids of each system
             /* {
                 'topOffset':
-                'id': 
+                'id':
             } */
         ];
-        
+
         this.currentSystem = 0; // topmost system object within the Vida display
         this.totalSystems = 0; // total number of system objects
 
         // For dragging
         this.clickedPage; // last clicked page
-        this.drag_info = {
-            /*
+        this.dragInfo = {
+
+        /*
             "x": position of clicked note
             "initY": initial Y position
-            "svgY": scaled initial Y position 
+            "svgY": scaled initial Y position
             "pixPerPix": conversion between the above two
-            */
+        */
+
         };
         this.dragging;
-        this.highlighted_cache = [];
+        this.highlightedCache = [];
         // this.verovioWorker = options.controller.verovioWorker;
-
-        this.ticketID = 0;
-        this.tickets = {};
     }
 
     setDefaults(options)
@@ -90,7 +92,7 @@ export class VidaView
     {
         window.addEventListener('resize', this.boundResize);
 
-        this.ui.svgOverlay.removeEventListener('scroll', this.boundSyncScroll); 
+        this.ui.svgOverlay.removeEventListener('scroll', this.boundSyncScroll);
         this.ui.nextPage.removeEventListener('click', this.boundGotoNext);
         this.ui.prevPage.removeEventListener('click', this.boundGotoPrev);
         this.ui.orientationToggle.removeEventListener('click', this.boundOrientationToggle);
@@ -121,7 +123,7 @@ export class VidaView
         if (!this.parentElement || !this.workerLocation || !this.verovioLocation)
         {
             if (this.debug)
-                console.error("Vida could not be fully instantiated. Please set whatever is undefined of the following three using (vida).setDefaults({}):\n" + 
+                console.error("Vida could not be fully instantiated. Please set whatever is undefined of the following three using (vida).setDefaults({}):\n" +
                     "parentElement: " + this.parentElement + "\n" +
                     "workerLocation: " + this.workerLocation + "\n" +
                     "verovioLocation: " + this.verovioLocation);
@@ -143,7 +145,7 @@ export class VidaView
                 '<span id="vida-zoom-in" class="vida-zoom-control"></span>' +
                 '<span id="vida-zoom-out" class="vida-zoom-control"></span>' +
             '</div>' +
-            //'<div class="vida-grid-toggle">Toggle to grid</div>' +
+            // '<div class="vida-grid-toggle">Toggle to grid</div>' +
             '<div id="vida-next-page" class="vida-direction-control"></div>' +
             '<div id="vida-orientation-toggle">Toggle orientation</div>' +
         '</div>' +
@@ -168,7 +170,7 @@ export class VidaView
         this.ui.zoomOut = document.getElementById("vida-zoom-out");
 
         // synchronized scrolling between svg overlay and wrapper
-        this.ui.svgOverlay.addEventListener('scroll', this.boundSyncScroll); 
+        this.ui.svgOverlay.addEventListener('scroll', this.boundSyncScroll);
 
         // control bar events
         this.ui.nextPage.addEventListener('click', this.boundGotoNext);
@@ -182,9 +184,9 @@ export class VidaView
 
         // Initialize the Verovio WebWorker wrapper
         this.verovioWorker = new Worker(this.workerLocation); // the threaded wrapper for the Verovio object
-        this.verovioWorker.postMessage(['setVerovio', this.verovioLocation])
+        this.contactWorker('setVerovio', {'location': this.verovioLocation});
         var self = this; // for referencing it inside onmessage
-        this.verovioWorker.onmessage = function(event){
+        this.verovioWorker.onmessage = (event) => {
             const vidaOffset = self.ui.svgWrapper.getBoundingClientRect().top;
             let eventType = event.data[0];
             let ticket = event.data[1];
@@ -287,7 +289,7 @@ export class VidaView
 
         this.ui.svgOverlay.innerHTML = this.ui.svgWrapper.innerHTML = this.verovioContent = "";
         this.verovioSettings.pageHeight = Math.max(this.ui.svgWrapper.clientHeight * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100); // minimal value required by Verovio
-        this.verovioSettings.pageWidth = Math.max(this.ui.svgWrapper.clientWidth * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100); // idem     
+        this.verovioSettings.pageWidth = Math.max(this.ui.svgWrapper.clientWidth * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100); // idem
         this.contactWorker('setOptions', {'options': JSON.stringify(this.verovioSettings)});
         this.contactWorker('loadData', {'mei': this.mei + "\n"}, (event) => {
             self.pageCount = event.data[1];
@@ -487,10 +489,10 @@ export class VidaView
         var svgHeight = parseInt(parentSVG.getAttribute('height'));
         var pixPerPix = (actualHeight / svgHeight);
 
-        this.drag_info["x"] = t.getAttribute("x") >> 0;
-        this.drag_info["svgY"] = t.getAttribute("y") >> 0;
-        this.drag_info["initY"] = e.pageY
-        this.drag_info["pixPerPix"] = pixPerPix;
+        this.dragInfo["x"] = t.getAttribute("x") >> 0;
+        this.dragInfo["svgY"] = t.getAttribute("y") >> 0;
+        this.dragInfo["initY"] = e.pageY;
+        this.dragInfo["pixPerPix"] = pixPerPix;
 
         // we haven't started to drag yet, this might be just a selection
         document.addEventListener("mousemove", this.boundMouseMove);
@@ -503,9 +505,9 @@ export class VidaView
 
     mouseMoveListener(e)
     {
-        const scaledY = (e.pageY - this.drag_info.initY) * this.drag_info.pixPerPix;
-        for (var idx = 0; idx < this.highlighted_cache.length; idx++)
-            this.ui.svgOverlay.querySelector("#" + this.highlighted_cache[idx]).setAttribute("transform", "translate(0, " + scaledY + ")");
+        const scaledY = (e.pageY - this.dragInfo.initY) * this.dragInfo.pixPerPix;
+        for (var idx = 0; idx < this.highlightedCache.length; idx++)
+            this.ui.svgOverlay.querySelector("#" + this.highlightedCache[idx]).setAttribute("transform", "translate(0, " + scaledY + ")");
 
         this.dragging = true;
         e.preventDefault();
@@ -524,25 +526,25 @@ export class VidaView
 
     commitChanges(finalY)
     {
-        for (var idx = 0; idx < this.highlighted_cache.length; idx++)
+        for (var idx = 0; idx < this.highlightedCache.length; idx++)
         {
-            const id = this.highlighted_cache[idx];
+            const id = this.highlightedCache[idx];
             const obj = this.ui.svgOverlay.querySelector("#" + id);
-            const scaledY = this.drag_info.svgY + (finalY - this.drag_info.initY) * this.drag_info.pixPerPix;
-            obj.style["transform"] =  "translate(" + [0 , scaledY] + ")";
+            const scaledY = this.dragInfo.svgY + (finalY - this.dragInfo.initY) * this.dragInfo.pixPerPix;
+            obj.style["transform"] =  "translate(" + [0, scaledY] + ")";
             obj.style["fill"] = "#000";
             obj.style["stroke"] = "#000";
-            
+
             const editorAction = JSON.stringify({
-                action: 'drag', 
-                param: { 
-                    elementId: id, 
-                    x: parseInt(this.drag_info.x),
-                    y: parseInt(scaledY) 
-                }   
+                action: 'drag',
+                param: {
+                    elementId: id,
+                    x: parseInt(this.dragInfo.x),
+                    y: parseInt(scaledY)
+                }
             });
 
-            this.contactWorker('edit', {'action': editorAction, 'pageIndex': this.clickedPage, 'notNeededSoon': false}); 
+            this.contactWorker('edit', {'action': editorAction, 'pageIndex': this.clickedPage, 'notNeededSoon': false});
             if (this.dragging) this.removeHighlight(id);
         }
 
@@ -550,24 +552,24 @@ export class VidaView
         {
             this.contactWorker("renderPage", {'pageIndex': this.clickedPage, 'notNeededSoon': true});
             this.dragging = false;
-            this.drag_info = {};
+            this.dragInfo = {};
         }
     };
 
     activateHighlight(id)
     {
-        if (this.highlighted_cache.indexOf(id) > -1) return;
+        if (this.highlightedCache.indexOf(id) > -1) return;
 
-        this.highlighted_cache.push(id);
+        this.highlightedCache.push(id);
         this.reapplyHighlights();
         this.hideNote(id);
     }
 
     reapplyHighlights()
     {
-        for(var idx = 0; idx < this.highlighted_cache.length; idx++)
+        for(var idx = 0; idx < this.highlightedCache.length; idx++)
         {
-            var targetObj = this.ui.svgOverlay.querySelector("#" + this.highlighted_cache[idx]);
+            var targetObj = this.ui.svgOverlay.querySelector("#" + this.highlightedCache[idx]);
             targetObj.setAttribute('style', "fill: #ff0000; stroke: #ff00000; fill-opacity: 1.0; stroke-opacity: 1.0;");
         }
     }
@@ -579,16 +581,16 @@ export class VidaView
 
     removeHighlight(id)
     {
-        var idx = this.highlighted_cache.indexOf(id);
+        var idx = this.highlightedCache.indexOf(id);
         if (idx === -1) return;
 
-        var removedID = this.highlighted_cache.splice(idx, 1);
+        var removedID = this.highlightedCache.splice(idx, 1);
         this.ui.svgWrapper.querySelector("#" + id).setAttribute('style', "fill-opacity: 1.0; stroke-opacity: 1.0;");
         this.ui.svgOverlay.querySelector("#" + removedID).setAttribute('style', "fill: #000000; stroke: #0000000; fill-opacity: 0.0; stroke-opacity: 0.0;");
     }
 
     resetHighlights()
     {
-        while(this.highlighted_cache[0]) this.removeHighlight(this.highlighted_cache[0]);
+        while(this.highlightedCache[0]) this.removeHighlight(this.highlightedCache[0]);
     }
 }

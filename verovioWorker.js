@@ -15,12 +15,12 @@ Outgoing:
 let vrvToolkit;
 let vrvSet = false;
 
-const contactCaller = function(message, ticket, params)
+const contactCaller = function (message, ticket, params)
 {
     postMessage([message, ticket, params]);
 };
 
-this.addEventListener('message', function(event){
+this.addEventListener('message', function (event){
     var rendered;
     var messageType = event.data[0];
     var ticket = event.data[1];
@@ -35,8 +35,9 @@ this.addEventListener('message', function(event){
     switch (messageType)
     {
         case "setVerovio":
-            importScripts(event.data[1]);
-            vrvToolkit = new verovio.toolkit();
+            importScripts(params.location);
+            HateESLint = verovio.toolkit;
+            vrvToolkit = new HateESLint();
             vrvSet = true;
             break;
 
@@ -60,7 +61,6 @@ this.addEventListener('message', function(event){
             break;
 
         case "edit":
-            //event.data{1: editorAction, 2: 0-indexed page index, 3: init overlay (to be passed back)}
             var res = vrvToolkit.edit(params.action);
             try {
                 rendered = vrvToolkit.renderPage(params.pageIndex + 1);
