@@ -14,22 +14,60 @@ export class VidaController
 {
     constructor(options)
     {
+        if (!options.workerLocation || !options.verovioLocation)
+            return console.error("The VidaController must be initialized with both the 'workerLocation' and 'verovioLocation' parameters.");
+
+        this.ticketID = 0;
+        this.tickets = {};
+
+        // Initialize the Verovio WebWorker wrapper
+        this.verovioWorker = new Worker(options.workerLocation); // the threaded wrapper for the Verovio object
+        this.verovioLocation = options.verovioLocation;
+        this.contactWorker('setVerovio', {'location': this.verovioLocation});
+        this.verovioWorker.onmessage = (event) => {
+            let eventType = event.data[0];
+            let ticket = event.data[1];
+            let params = event.data[2];
+
+            if (eventType === "error")
+            {
+                console.log("Error message from Verovio:", params);
+                if (ticket) delete this.tickets[ticket];
+            }
+
+            else if (this.tickets[ticket])
+            {
+                const callback = this.tickets[ticket];
+                callback.function.call(callback.scope, params);
+                delete this.tickets[ticket];
+            }
+            else console.log("Unexpected worker case:", event);
+        };
+    }
+
+    contactWorker(messageType, params, viewScope, callback)
+    {
+        // array passed is [messageType, ticketNumber, dataObject]
+        this.tickets[this.ticketID] = {
+            'function': callback,
+            'scope': viewScope
+        };
+        this.verovioWorker.postMessage([messageType, this.ticketID, params]);
+        this.ticketID++;
     }
 }
 
 export class VidaView
 {
-    // options needs to include workerLocation and parentElement
     constructor(options)
     {
+        if (!options.controller || !options.parentElement)
+            return console.error("All VidaView objects must be initialized with both the 'controller' and 'parentElement' parameters.");
+
         options = options || {};
         this.debug = options.debug;
+        this.controller = options.controller;
         this.parentElement = options.parentElement;
-        this.workerLocation = options.workerLocation;
-        this.verovioLocation = options.verovioLocation;
-
-        this.ticketID = 0;
-        this.tickets = {};
 
         // One of the little quirks of writing in ES6, bind events
         this.bindListeners();
@@ -38,7 +76,7 @@ export class VidaView
         this.initializeLayoutAndWorker();
 
         // "Global" variables
-        this.resizeTimer = undefined;
+        this.resizeTimer;
         this.verovioSettings = {
             pageHeight: 100,
             pageWidth: 100,
@@ -57,12 +95,13 @@ export class VidaView
                 'id':
             } */
         ];
-
         this.currentSystem = 0; // topmost system object within the Vida display
         this.totalSystems = 0; // total number of system objects
 
         // For dragging
         this.clickedPage; // last clicked page
+        this.draggingActive; // boolean "active"
+        this.highlightedCache = [];
         this.dragInfo = {
 
         /*
@@ -73,19 +112,6 @@ export class VidaView
         */
 
         };
-        this.dragging;
-        this.highlightedCache = [];
-        // this.verovioWorker = options.controller.verovioWorker;
-    }
-
-    setDefaults(options)
-    {
-        this.parentElement = options.parentElement;
-        this.workerLocation = options.workerLocation;
-        this.verovioLocation = options.verovioLocation;
-
-        // Attempt to re-run layout init
-        this.initializeLayoutAndWorker();
     }
 
     destroy()
@@ -120,16 +146,6 @@ export class VidaView
      */
     initializeLayoutAndWorker()
     {
-        if (!this.parentElement || !this.workerLocation || !this.verovioLocation)
-        {
-            if (this.debug)
-                console.error("Vida could not be fully instantiated. Please set whatever is undefined of the following three using (vida).setDefaults({}):\n" +
-                    "parentElement: " + this.parentElement + "\n" +
-                    "workerLocation: " + this.workerLocation + "\n" +
-                    "verovioLocation: " + this.verovioLocation);
-            return false;
-        }
-
         this.ui = {
             parentElement: this.parentElement, // must be DOM node
             svgWrapper: undefined,
@@ -181,55 +197,6 @@ export class VidaView
 
         // simulate a resize event
         this.updateDims();
-
-        // Initialize the Verovio WebWorker wrapper
-        this.verovioWorker = new Worker(this.workerLocation); // the threaded wrapper for the Verovio object
-        this.contactWorker('setVerovio', {'location': this.verovioLocation});
-        this.verovioWorker.onmessage = (event) => {
-            let eventType = event.data[0];
-            let ticket = event.data[1];
-            let params = event.data[2];
-
-            if (eventType === "error")
-            {
-                console.log("Error message from Verovio:", params);
-                if (ticket) delete this.tickets[ticket];
-            }
-
-            else if (this.tickets[ticket])
-            {
-                this.tickets[ticket].call(this, params);
-                delete this.tickets[ticket];
-            }
-            else
-            {
-                console.log("Unexpected worker case:", event);    
-            }
-        };
-    }
-
-    renderPage(params)
-    {
-        const vidaOffset = this.ui.svgWrapper.getBoundingClientRect().top;
-        const systemWrapper = document.querySelector(".vida-system-wrapper[data-index='" + params.pageIndex + "']");
-        systemWrapper.innerHTML = params.svg;
-
-        // Add data about the available systems here
-        const systems = this.ui.svgWrapper.querySelectorAll('g[class=system]');
-        for(var sIdx = 0; sIdx < systems.length; sIdx++)
-            this.systemData[sIdx] = {
-                'topOffset': systems[sIdx].getBoundingClientRect().top - vidaOffset - this.verovioSettings.border,
-                'id': systems[sIdx].id
-            };
-
-        // update the global tracking var
-        this.totalSystems = this.systemData.length;
-
-        // create the overlay, save the content, remove the popup, make sure highlights are up to date
-        if(params.notNeededSoon) this.createOverlay();
-        this.verovioContent = this.ui.svgWrapper.innerHTML;
-        this.ui.popup.remove();
-        this.reapplyHighlights();
     }
 
     // Necessary for how ES6 "this" works
@@ -250,19 +217,36 @@ export class VidaView
         this.boundResize = (evt) => this.resizeComponents(evt);
     }
 
+    /**
+     * Code for contacting the controller work; renderPage is used as the callback multiple times.
+     */
     contactWorker(messageType, params, callback)
     {
-        // array passed is [messageType, ticketNumber, dataObject]
-        this.tickets[this.ticketID] = callback;
-        this.verovioWorker.postMessage([messageType, this.ticketID, params]);
-        this.ticketID++;
+        this.controller.contactWorker(messageType, params, this, callback);
     }
 
-    updateDims()
+    renderPage(params)
     {
-        this.ui.svgOverlay.style.height = this.ui.svgWrapper.style.height = this.ui.parentElement.clientHeight - this.ui.controls.clientHeight;
-        this.ui.svgOverlay.style.top = this.ui.svgWrapper.style.top = this.ui.controls.clientHeight;
-        this.ui.svgOverlay.style.width = this.ui.svgWrapper.style.width = this.ui.parentElement.clientWidth;
+        const vidaOffset = this.ui.svgWrapper.getBoundingClientRect().top;
+        const systemWrapper = document.querySelector(".vida-system-wrapper[data-index='" + params.pageIndex + "']");
+        systemWrapper.innerHTML = params.svg;
+
+        // Add data about the available systems here
+        const systems = this.ui.svgWrapper.querySelectorAll('g[class=system]');
+        for(var sIdx = 0; sIdx < systems.length; sIdx++)
+            this.systemData[sIdx] = {
+                'topOffset': systems[sIdx].getBoundingClientRect().top - vidaOffset - this.verovioSettings.border,
+                'id': systems[sIdx].id
+            };
+
+        // update the global tracking var
+        this.totalSystems = this.systemData.length;
+
+        // create the overlay, save the content, remove the popup, make sure highlights are up to date
+        if(params.createOverlay) this.createOverlay();
+        this.verovioContent = this.ui.svgWrapper.innerHTML;
+        this.ui.popup.remove();
+        this.reapplyHighlights();
     }
 
     initPopup(text)
@@ -368,7 +352,7 @@ export class VidaView
     }
 
     /**
-     * Event listeners
+     * Event listeners - Display
      */
     resizeComponents()
     {
@@ -383,6 +367,14 @@ export class VidaView
             console.log(self);
             self.refreshVerovio();
         }, 200);
+    }
+
+    // Abstracted out because it's reused
+    updateDims()
+    {
+        this.ui.svgOverlay.style.height = this.ui.svgWrapper.style.height = this.ui.parentElement.clientHeight - this.ui.controls.clientHeight;
+        this.ui.svgOverlay.style.top = this.ui.svgWrapper.style.top = this.ui.controls.clientHeight;
+        this.ui.svgOverlay.style.width = this.ui.svgWrapper.style.width = this.ui.parentElement.clientWidth;
     }
 
     syncScroll(e)
@@ -454,6 +446,9 @@ export class VidaView
         this.updateZoomIcons();
     }
 
+    /**
+     * Event listeners - Dragging
+     */
     objectClickListener(e)
     {
         var closestMeasure = e.target.closest(".measure");
@@ -496,7 +491,7 @@ export class VidaView
         document.addEventListener("mouseup", this.boundMouseUp);
         document.addEventListener("touchmove", this.boundMouseMove);
         document.addEventListener("touchend", this.boundMouseUp);
-        this.dragging = false;
+        this.draggingActive = false;
         console.log("Would have published highlightSelected");
     };
 
@@ -506,7 +501,7 @@ export class VidaView
         for (var idx = 0; idx < this.highlightedCache.length; idx++)
             this.ui.svgOverlay.querySelector("#" + this.highlightedCache[idx]).setAttribute("transform", "translate(0, " + scaledY + ")");
 
-        this.dragging = true;
+        this.draggingActive = true;
         e.preventDefault();
     };
 
@@ -517,7 +512,7 @@ export class VidaView
         document.removeEventListener("touchmove", this.boundMouseMove);
         document.removeEventListener("touchend", this.boundMouseUp);
 
-        if (!this.dragging) return;
+        if (!this.draggingActive) return;
         this.commitChanges(e.pageY);
     }
 
@@ -541,14 +536,14 @@ export class VidaView
                 }
             });
 
-            this.contactWorker('edit', {'action': editorAction, 'pageIndex': this.clickedPage, 'notNeededSoon': false}, this.renderPage);
-            if (this.dragging) this.removeHighlight(id);
+            this.contactWorker('edit', {'action': editorAction, 'pageIndex': this.clickedPage}, this.renderPage);
+            if (this.draggingActive) this.removeHighlight(id);
         }
 
-        if (this.dragging)
+        if (this.draggingActive)
         {
-            this.contactWorker("renderPage", {'pageIndex': this.clickedPage, 'notNeededSoon': true}, this.renderPage);
-            this.dragging = false;
+            this.contactWorker("renderPage", {'pageIndex': this.clickedPage}, this.renderPage);
+            this.draggingActive = false;
             this.dragInfo = {};
         }
     };
@@ -559,7 +554,9 @@ export class VidaView
 
         this.highlightedCache.push(id);
         this.reapplyHighlights();
-        this.hideNote(id);
+
+        // Hide the svgWrapper copy of the note
+        this.ui.svgWrapper.querySelector("#" + id).setAttribute('style', "fill-opacity: 0.0; stroke-opacity: 0.0;");
     }
 
     reapplyHighlights()
@@ -569,11 +566,6 @@ export class VidaView
             var targetObj = this.ui.svgOverlay.querySelector("#" + this.highlightedCache[idx]);
             targetObj.setAttribute('style', "fill: #ff0000; stroke: #ff00000; fill-opacity: 1.0; stroke-opacity: 1.0;");
         }
-    }
-
-    hideNote(id)
-    {
-        this.ui.svgWrapper.querySelector("#" + id).setAttribute('style', "fill-opacity: 0.0; stroke-opacity: 0.0;");
     }
 
     removeHighlight(id)

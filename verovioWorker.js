@@ -57,7 +57,7 @@ this.addEventListener('message', function (event){
             catch (e) {
                 contactCaller('error', ticket, {'error': "Render of page " + params.pageIndex + " failed:" + e});
             }
-            contactCaller("returnPage", ticket, {'pageIndex': params.pageIndex, 'svg': rendered, 'notNeededSoon': params.notNeededSoon || true});
+            contactCaller("returnPage", ticket, {'pageIndex': params.pageIndex, 'svg': rendered, 'createOverlay': true});
             break;
 
         case "edit":
@@ -68,7 +68,7 @@ this.addEventListener('message', function (event){
             catch (e) {
                 contactCaller('error', ticket, {'error': "Render of page " + params.pageIndex + " failed:" + e});
             }
-            contactCaller("returnPage", ticket, {'pageIndex': params.pageIndex, 'svg': rendered, 'notNeededSoon': params.notNeededSoon});
+            contactCaller("returnPage", ticket, {'pageIndex': params.pageIndex, 'svg': rendered, 'createOverlay': false});
             break;
 
         case "mei":
