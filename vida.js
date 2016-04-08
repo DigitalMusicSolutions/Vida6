@@ -185,53 +185,51 @@ export class VidaView
         // Initialize the Verovio WebWorker wrapper
         this.verovioWorker = new Worker(this.workerLocation); // the threaded wrapper for the Verovio object
         this.contactWorker('setVerovio', {'location': this.verovioLocation});
-        var self = this; // for referencing it inside onmessage
         this.verovioWorker.onmessage = (event) => {
-            const vidaOffset = self.ui.svgWrapper.getBoundingClientRect().top;
             let eventType = event.data[0];
             let ticket = event.data[1];
             let params = event.data[2];
-            switch (eventType){ // all cases have the rest of the array returned notated in a comment
-                case "dataLoaded": // [page count]
-                    for(var pIdx = 0; pIdx < params.pageCount; pIdx++)
-                    {
-                        self.ui.svgWrapper.innerHTML += "<div class='vida-system-wrapper' data-index='" + pIdx + "'></div>";
-                        self.contactWorker("renderPage", {'pageIndex': pIdx});
-                    }
-                    break;
 
-                case "returnPage": // [page index, rendered svg]
-                    const systemWrapper = document.querySelector(".vida-system-wrapper[data-index='" + params.pageIndex + "']");
-                    systemWrapper.innerHTML = params.svg;
+            if (eventType === "error")
+            {
+                console.log("Error message from Verovio:", params);
+                if (ticket) delete this.tickets[ticket];
+            }
 
-                    // Add data about the available systems here
-                    const systems = self.ui.svgWrapper.querySelectorAll('g[class=system]');
-                    for(var sIdx = 0; sIdx < systems.length; sIdx++)
-                        self.systemData[sIdx] = {
-                            'topOffset': systems[sIdx].getBoundingClientRect().top - vidaOffset - self.verovioSettings.border,
-                            'id': systems[sIdx].id
-                        };
-
-                    // update the global tracking var
-                    self.totalSystems = self.systemData.length;
-
-                    // create the overlay, save the content, remove the popup, make sure highlights are up to date
-                    if(params.notNeededSoon) self.createOverlay();
-                    self.verovioContent = self.ui.svgWrapper.innerHTML;
-                    self.ui.popup.remove();
-                    self.reapplyHighlights();
-                    break;
-
-                case "mei": // [mei as interpreted by Verovio]
-                    mei = params.mei;
-                    break;
-
-                default:
-                case "error":
-                    console.log("Error message from Verovio:", params);
-                    break;
+            else if (this.tickets[ticket])
+            {
+                this.tickets[ticket].call(this, params);
+                delete this.tickets[ticket];
+            }
+            else
+            {
+                console.log("Unexpected worker case:", event);    
             }
         };
+    }
+
+    renderPage(params)
+    {
+        const vidaOffset = this.ui.svgWrapper.getBoundingClientRect().top;
+        const systemWrapper = document.querySelector(".vida-system-wrapper[data-index='" + params.pageIndex + "']");
+        systemWrapper.innerHTML = params.svg;
+
+        // Add data about the available systems here
+        const systems = this.ui.svgWrapper.querySelectorAll('g[class=system]');
+        for(var sIdx = 0; sIdx < systems.length; sIdx++)
+            this.systemData[sIdx] = {
+                'topOffset': systems[sIdx].getBoundingClientRect().top - vidaOffset - this.verovioSettings.border,
+                'id': systems[sIdx].id
+            };
+
+        // update the global tracking var
+        this.totalSystems = this.systemData.length;
+
+        // create the overlay, save the content, remove the popup, make sure highlights are up to date
+        if(params.notNeededSoon) this.createOverlay();
+        this.verovioContent = this.ui.svgWrapper.innerHTML;
+        this.ui.popup.remove();
+        this.reapplyHighlights();
     }
 
     // Necessary for how ES6 "this" works
@@ -291,12 +289,11 @@ export class VidaView
         this.verovioSettings.pageHeight = Math.max(this.ui.svgWrapper.clientHeight * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100); // minimal value required by Verovio
         this.verovioSettings.pageWidth = Math.max(this.ui.svgWrapper.clientWidth * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100); // idem
         this.contactWorker('setOptions', {'options': JSON.stringify(this.verovioSettings)});
-        this.contactWorker('loadData', {'mei': this.mei + "\n"}, (event) => {
-            self.pageCount = event.data[1];
-            for(var pIdx = 0; pIdx < self.pageCount; pIdx++)
+        this.contactWorker('loadData', {'mei': this.mei + "\n"}, (params) => {
+            for(var pIdx = 0; pIdx < params.pageCount; pIdx++)
             {
-                self.ui.svgWrapper.innerHTML += "<div class='vida-system-wrapper' data-index='" + pIdx + "'></div>";
-                self.contactWorker("renderPage", {'pageIndex': pIdx});
+                this.ui.svgWrapper.innerHTML += "<div class='vida-system-wrapper' data-index='" + pIdx + "'></div>";
+                this.contactWorker("renderPage", {'pageIndex': pIdx}, this.renderPage);
             }
         });
     }
@@ -544,13 +541,13 @@ export class VidaView
                 }
             });
 
-            this.contactWorker('edit', {'action': editorAction, 'pageIndex': this.clickedPage, 'notNeededSoon': false});
+            this.contactWorker('edit', {'action': editorAction, 'pageIndex': this.clickedPage, 'notNeededSoon': false}, this.renderPage);
             if (this.dragging) this.removeHighlight(id);
         }
 
         if (this.dragging)
         {
-            this.contactWorker("renderPage", {'pageIndex': this.clickedPage, 'notNeededSoon': true});
+            this.contactWorker("renderPage", {'pageIndex': this.clickedPage, 'notNeededSoon': true}, this.renderPage);
             this.dragging = false;
             this.dragInfo = {};
         }
