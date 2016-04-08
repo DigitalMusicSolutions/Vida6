@@ -14,17 +14,26 @@ export class VidaController
 {
     constructor(options)
     {
+        options = options || {};
         if (!options.workerLocation || !options.verovioLocation)
             return console.error("The VidaController must be initialized with both the 'workerLocation' and 'verovioLocation' parameters.");
 
+        // Keeps track of callback functions for worker calls
         this.ticketID = 0;
         this.tickets = {};
 
-        // Initialize the Verovio WebWorker wrapper
-        this.verovioWorker = new Worker(options.workerLocation); // the threaded wrapper for the Verovio object
+        // Keeps track of the worker reserved for each view
+        this.workerLocation = options.workerLocation;
         this.verovioLocation = options.verovioLocation;
-        this.contactWorker('setVerovio', {'location': this.verovioLocation});
-        this.verovioWorker.onmessage = (event) => {
+        this.viewWorkers = [];
+    }
+
+    register(viewObj)
+    {
+        const newWorker = new Worker(this.workerLocation);
+        const workerIndex = this.viewWorkers.push(newWorker) - 1; // 1-indexed length to 0-indexed value
+
+        newWorker.onmessage = (event) => {
             let eventType = event.data[0];
             let ticket = event.data[1];
             let params = event.data[2];
@@ -37,22 +46,20 @@ export class VidaController
 
             else if (this.tickets[ticket])
             {
-                const callback = this.tickets[ticket];
-                callback.function.call(callback.scope, params);
+                this.tickets[ticket].call(viewObj, params);
                 delete this.tickets[ticket];
             }
             else console.log("Unexpected worker case:", event);
         };
+        this.contactWorker('setVerovio', {'location': this.verovioLocation}, workerIndex);
+        return workerIndex;
     }
 
-    contactWorker(messageType, params, viewScope, callback)
+    contactWorker(messageType, params, viewIndex, callback)
     {
         // array passed is [messageType, ticketNumber, dataObject]
-        this.tickets[this.ticketID] = {
-            'function': callback,
-            'scope': viewScope
-        };
-        this.verovioWorker.postMessage([messageType, this.ticketID, params]);
+        this.tickets[this.ticketID] = callback;
+        this.viewWorkers[viewIndex].postMessage([messageType, this.ticketID, params]);
         this.ticketID++;
     }
 }
@@ -61,13 +68,14 @@ export class VidaView
 {
     constructor(options)
     {
+        options = options || {};
         if (!options.controller || !options.parentElement)
             return console.error("All VidaView objects must be initialized with both the 'controller' and 'parentElement' parameters.");
 
-        options = options || {};
+        this.parentElement = options.parentElement;
         this.debug = options.debug;
         this.controller = options.controller;
-        this.parentElement = options.parentElement;
+        this.viewIndex = this.controller.register(this);
 
         // One of the little quirks of writing in ES6, bind events
         this.bindListeners();
@@ -155,19 +163,19 @@ export class VidaView
         };
 
         // Set up the base layout
-        this.ui.parentElement.innerHTML = '<div id="vida-page-controls">' +
-            '<div id="vida-prev-page" class="vida-direction-control"></div>' +
-            '<div id="vida-zoom-controls">' +
-                '<span id="vida-zoom-in" class="vida-zoom-control"></span>' +
-                '<span id="vida-zoom-out" class="vida-zoom-control"></span>' +
+        this.ui.parentElement.innerHTML = '<div class="vida-page-controls">' +
+            '<div class="vida-prev-page vida-direction-control"></div>' +
+            '<div class="vida-zoom-controls">' +
+                '<span class="vida-zoom-in vida-zoom-control"></span>' +
+                '<span class="vida-zoom-out vida-zoom-control"></span>' +
             '</div>' +
             // '<div class="vida-grid-toggle">Toggle to grid</div>' +
-            '<div id="vida-next-page" class="vida-direction-control"></div>' +
-            '<div id="vida-orientation-toggle">Toggle orientation</div>' +
+            '<div class="vida-next-page vida-direction-control"></div>' +
+            '<div class="vida-orientation-toggle">Toggle orientation</div>' +
         '</div>' +
-        '<div id="vida-svg-wrapper" class="vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
-        '<div id="vida-svg-overlay" class="vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
-        '<div id="vida-loading-popup"></div>';
+        '<div class="vida-svg-wrapper vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
+        '<div class="vida-svg-overlay vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
+        '<div class="vida-loading-popup"></div>';
 
         window.addEventListener('resize', this.boundResize);
 
@@ -175,15 +183,15 @@ export class VidaView
         if (this.ui && this.ui.svgOverlay) this.destroy();
 
         // Set up the UI object
-        this.ui.svgWrapper = document.getElementById("vida-svg-wrapper");
-        this.ui.svgOverlay = document.getElementById("vida-svg-overlay");
-        this.ui.controls = document.getElementById("vida-page-controls");
-        this.ui.popup = document.getElementById("vida-loading-popup");
-        this.ui.nextPage = document.getElementById("vida-next-page");
-        this.ui.prevPage = document.getElementById("vida-prev-page");
-        this.ui.orientationToggle = document.getElementById("vida-orientation-toggle");
-        this.ui.zoomIn = document.getElementById("vida-zoom-in");
-        this.ui.zoomOut = document.getElementById("vida-zoom-out");
+        this.ui.svgWrapper = this.ui.parentElement.querySelector(".vida-svg-wrapper");
+        this.ui.svgOverlay = this.ui.parentElement.querySelector(".vida-svg-overlay");
+        this.ui.controls = this.ui.parentElement.querySelector(".vida-page-controls");
+        this.ui.popup = this.ui.parentElement.querySelector(".vida-loading-popup");
+        this.ui.nextPage = this.ui.parentElement.querySelector(".vida-next-page");
+        this.ui.prevPage = this.ui.parentElement.querySelector(".vida-prev-page");
+        this.ui.orientationToggle = this.ui.parentElement.querySelector(".vida-orientation-toggle");
+        this.ui.zoomIn = this.ui.parentElement.querySelector(".vida-zoom-in");
+        this.ui.zoomOut = this.ui.parentElement.querySelector(".vida-zoom-out");
 
         // synchronized scrolling between svg overlay and wrapper
         this.ui.svgOverlay.addEventListener('scroll', this.boundSyncScroll);
@@ -222,13 +230,13 @@ export class VidaView
      */
     contactWorker(messageType, params, callback)
     {
-        this.controller.contactWorker(messageType, params, this, callback);
+        this.controller.contactWorker(messageType, params, this.viewIndex, callback);
     }
 
     renderPage(params)
     {
         const vidaOffset = this.ui.svgWrapper.getBoundingClientRect().top;
-        const systemWrapper = document.querySelector(".vida-system-wrapper[data-index='" + params.pageIndex + "']");
+        const systemWrapper = this.ui.parentElement.querySelector(".vida-system-wrapper[data-index='" + params.pageIndex + "']");
         systemWrapper.innerHTML = params.svg;
 
         // Add data about the available systems here
@@ -364,7 +372,6 @@ export class VidaView
         const self = this;
         this.resizeTimer = setTimeout(function ()
         {
-            console.log(self);
             self.refreshVerovio();
         }, 200);
     }
@@ -409,7 +416,7 @@ export class VidaView
 
     toggleOrientation() // TODO: this setting might not be right. IgnoreLayout instead?
     {
-        var dirControls = document.getElementsByClassName("vida-direction-control");
+        var dirControls = this.ui.parentElement.getElementsByClassName("vida-direction-control");
         if(this.verovioSettings.noLayout === 1)
         {
             this.verovioSettings.noLayout = 0;

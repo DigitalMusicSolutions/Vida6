@@ -3,7 +3,7 @@ html, body {
   width: 100%;
   margin: 0; }
 
-#app {
+.app {
   width: 100%;
   height: 100%;
   position: relative; }
@@ -14,12 +14,12 @@ html, body {
   max-height: 100%;
   max-width: 100%; }
 
-#vida-svg-overlay {
+.vida-svg-overlay {
   overflow: auto;
   width: 100%;
   height: 100%; }
 
-#vida-svg-wrapper {
+.vida-svg-wrapper {
   overflow: auto;
   width: 100%;
   height: 100%; }
@@ -28,14 +28,14 @@ svg {
   display: block;
   margin: 0 auto; }
 
-#vida-page-controls {
+.vida-page-controls {
   width: 100%;
   text-align: center;
   z-index: 3;
   height: 1em;
   background: white; }
 
-#vida-prev-page {
+.vida-prev-page {
   background-image: url("images/glyphicons_210_left_arrow.png");
   background-repeat: no-repeat;
   position: relative;
@@ -47,7 +47,7 @@ svg {
   width: 20px;
   height: 18px; }
 
-#vida-next-page {
+.vida-next-page {
   background-image: url("images/glyphicons_211_right_arrow.png");
   background-repeat: no-repeat;
   position: relative;
@@ -59,18 +59,18 @@ svg {
   width: 20px;
   height: 18px; }
 
-#vida-zoom-controls {
+.vida-zoom-controls {
   display: inline-block;
   float: left;
   position: relative; }
 
-#vida-orientation-toggle {
+.vida-orientation-toggle {
   width: auto;
   display: inline-block;
   float: right;
   position: relative; }
 
-#vida-zoom-in {
+.vida-zoom-in {
   background-image: url("images/glyphicons_236_zoom_in.png");
   background-repeat: no-repeat;
   display: inline-block;
@@ -79,7 +79,7 @@ svg {
   padding-right: 5px;
   cursor: pointer; }
 
-#vida-zoom-out {
+.vida-zoom-out {
   background-image: url("images/glyphicons_237_zoom_out.png");
   background-repeat: no-repeat;
   display: inline-block;
@@ -87,12 +87,12 @@ svg {
   height: 25px;
   cursor: pointer; }
 
-#vida-loading-popup {
+.vida-loading-popup {
   display: none;
   position: fixed;
   padding: 10px;
   border: thin black solid;
   border-radius: 10px;
-  background-color: #FFF; }
+  background-color: .FFF; }
 
-/*# sourceMappingURL=app.css.map */
+/*. sourceMappingURL=app.css.map */
