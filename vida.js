@@ -120,6 +120,8 @@ export class VidaView
         */
 
         };
+
+        if (options.mei) this.refreshVerovio(options.mei);
     }
 
     destroy()
