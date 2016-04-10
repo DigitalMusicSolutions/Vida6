@@ -26,12 +26,14 @@ export class VidaController
         this.workerLocation = options.workerLocation;
         this.verovioLocation = options.verovioLocation;
         this.viewWorkers = [];
+        this.views = {}; // map to make sure that indexes line up
     }
 
     register(viewObj)
     {
         const newWorker = new Worker(this.workerLocation);
         const workerIndex = this.viewWorkers.push(newWorker) - 1; // 1-indexed length to 0-indexed value
+        this.views[workerIndex] = viewObj;
 
         newWorker.onmessage = (event) => {
             let eventType = event.data[0];
@@ -62,6 +64,11 @@ export class VidaController
         this.viewWorkers[viewIndex].postMessage([messageType, this.ticketID, params]);
         this.ticketID++;
     }
+
+    setMEIForViewIndex(viewIndex, MEI)
+    {
+        this.views[viewIndex].refreshVerovio(MEI);
+    }
 }
 
 export class VidaView
@@ -74,6 +81,13 @@ export class VidaView
 
         this.parentElement = options.parentElement;
         this.debug = options.debug;
+        this.iconLocations = options.iconLocations || {
+            'prev-page': 'images/glyphicons_210_left_arrow.png',
+            'next-page': 'images/glyphicons_211_right_arrow.png',
+            'zoom-in': 'images/glyphicons_236_zoom_in.png',
+            'zoom-out': 'images/glyphicons_237_zoom_out.png',
+        };
+
         this.controller = options.controller;
         this.viewIndex = this.controller.register(this);
 
@@ -165,14 +179,21 @@ export class VidaView
         };
 
         // Set up the base layout
+        this.iconLocations = {
+            'prev-page': "background-image: url('" + this.iconLocations['prev-page'] + "')",
+            'next-page': "background-image: url('" + this.iconLocations['next-page'] + "')",
+            'zoom-in': "background-image: url('" + this.iconLocations['zoom-in'] + "')",
+            'zoom-out': "background-image: url('" + this.iconLocations['zoom-out'] + "')",
+        };
+
         this.ui.parentElement.innerHTML = '<div class="vida-page-controls">' +
-            '<div class="vida-prev-page vida-direction-control"></div>' +
+            '<div class="vida-prev-page vida-direction-control" style="' + this.iconLocations['prev-page'] + '"></div>' +
             '<div class="vida-zoom-controls">' +
-                '<span class="vida-zoom-in vida-zoom-control"></span>' +
-                '<span class="vida-zoom-out vida-zoom-control"></span>' +
+                '<span class="vida-zoom-in vida-zoom-control" style="' + this.iconLocations['zoom-in'] + '"></span>' +
+                '<span class="vida-zoom-out vida-zoom-control" style="' + this.iconLocations['zoom-out'] + '"></span>' +
             '</div>' +
             // '<div class="vida-grid-toggle">Toggle to grid</div>' +
-            '<div class="vida-next-page vida-direction-control"></div>' +
+            '<div class="vida-next-page vida-direction-control" style="' + this.iconLocations['next-page'] + '"></div>' +
             '<div class="vida-orientation-toggle">Toggle orientation</div>' +
         '</div>' +
         '<div class="vida-svg-wrapper vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
@@ -230,6 +251,12 @@ export class VidaView
     /**
      * Code for contacting the controller work; renderPage is used as the callback multiple times.
      */
+
+    getViewIndex()
+    {
+        return this.viewIndex;
+    }
+
     contactWorker(messageType, params, callback)
     {
         this.controller.contactWorker(messageType, params, this.viewIndex, callback);
