@@ -180,13 +180,13 @@ export class VidaView
         };
 
         this.ui.parentElement.innerHTML = '<div class="vida-page-controls">' +
-            '<div class="vida-prev-page vida-direction-control ' + this.iconClasses.nextPage +'"></div>' +
+            '<div class="vida-prev-page vida-direction-control ' + this.iconClasses.prevPage +'"></div>' +
             '<div class="vida-zoom-controls">' +
                 '<span class="vida-zoom-in vida-zoom-control ' + this.iconClasses.zoomIn +'"></span>' +
                 '<span class="vida-zoom-out vida-zoom-control ' + this.iconClasses.zoomOut +'"></span>' +
             '</div>' +
             // '<div class="vida-grid-toggle">Toggle to grid</div>' +
-            '<div class="vida-next-page vida-direction-control ' + this.iconClasses.prevPage +'"></div>' +
+            '<div class="vida-next-page vida-direction-control ' + this.iconClasses.nextPage +'"></div>' +
             '<div class="vida-orientation-toggle">Toggle orientation</div>' +
         '</div>' +
         '<div class="vida-svg-wrapper vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
