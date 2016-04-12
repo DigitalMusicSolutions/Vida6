@@ -29,6 +29,7 @@ svg {
   margin: 0 auto; }
 
 .vida-page-controls {
+  top: .25em;
   width: 100%;
   text-align: center;
   z-index: 3;
@@ -38,32 +39,29 @@ svg {
 .vida-prev-page {
   background-repeat: no-repeat;
   position: relative;
-  top: .25em;
-  padding-left: 2em;
   float: left;
   z-index: 2;
   cursor: pointer;
-  width: 20px;
+  width: 25%;
   height: 18px; }
 
 .vida-next-page {
   background-repeat: no-repeat;
   position: relative;
   float: right;
-  top: .25em;
-  padding-right: 2em;
   z-index: 2;
   cursor: pointer;
-  width: 20px;
+  width: 25%;
   height: 18px; }
 
 .vida-zoom-controls {
+  width: 25%;
   display: inline-block;
   float: left;
   position: relative; }
 
 .vida-orientation-toggle {
-  width: auto;
+  width: 25%;
   display: inline-block;
   float: right;
   position: relative; }
