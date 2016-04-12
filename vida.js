@@ -152,7 +152,7 @@ export class VidaView
 
         this.ui.svgOverlay.removeEventListener('click', this.boundObjectClick);
         const notes = this.ui.svgOverlay.querySelectorAll(".note");
-        for (idx = 0; idx < notes.length; idx++)
+        for (var idx = 0; idx < notes.length; idx++)
         {
             const note = notes[idx];
 
