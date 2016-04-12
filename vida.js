@@ -81,11 +81,12 @@ export class VidaView
 
         this.parentElement = options.parentElement;
         this.debug = options.debug;
-        this.iconLocations = options.iconLocations || {
-            'prev-page': 'images/glyphicons_210_left_arrow.png',
-            'next-page': 'images/glyphicons_211_right_arrow.png',
-            'zoom-in': 'images/glyphicons_236_zoom_in.png',
-            'zoom-out': 'images/glyphicons_237_zoom_out.png',
+        options.iconClasses = options.iconClasses || {};
+        this.iconClasses = {
+            'nextPage': options.iconClasses.nextPage || "",
+            'prevPage': options.iconClasses.prevPage || "",
+            'zoomIn': options.iconClasses.zoomIn || "",
+            'zoomOut': options.iconClasses.zoomOut || ""
         };
 
         this.controller = options.controller;
@@ -178,22 +179,14 @@ export class VidaView
             popup: undefined
         };
 
-        // Set up the base layout
-        this.iconLocations = {
-            'prev-page': "background-image: url('" + this.iconLocations['prev-page'] + "')",
-            'next-page': "background-image: url('" + this.iconLocations['next-page'] + "')",
-            'zoom-in': "background-image: url('" + this.iconLocations['zoom-in'] + "')",
-            'zoom-out': "background-image: url('" + this.iconLocations['zoom-out'] + "')",
-        };
-
         this.ui.parentElement.innerHTML = '<div class="vida-page-controls">' +
-            '<div class="vida-prev-page vida-direction-control" style="' + this.iconLocations['prev-page'] + '"></div>' +
+            '<div class="vida-prev-page vida-direction-control ' + this.iconClasses.nextPage +'"></div>' +
             '<div class="vida-zoom-controls">' +
-                '<span class="vida-zoom-in vida-zoom-control" style="' + this.iconLocations['zoom-in'] + '"></span>' +
-                '<span class="vida-zoom-out vida-zoom-control" style="' + this.iconLocations['zoom-out'] + '"></span>' +
+                '<span class="vida-zoom-in vida-zoom-control ' + this.iconClasses.zoomIn +'"></span>' +
+                '<span class="vida-zoom-out vida-zoom-control ' + this.iconClasses.zoomOut +'"></span>' +
             '</div>' +
             // '<div class="vida-grid-toggle">Toggle to grid</div>' +
-            '<div class="vida-next-page vida-direction-control" style="' + this.iconLocations['next-page'] + '"></div>' +
+            '<div class="vida-next-page vida-direction-control ' + this.iconClasses.prevPage +'"></div>' +
             '<div class="vida-orientation-toggle">Toggle orientation</div>' +
         '</div>' +
         '<div class="vida-svg-wrapper vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
