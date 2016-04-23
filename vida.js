@@ -100,9 +100,9 @@ export class VidaView
 
         // Initialize the events system and alias the functions
         this.events = new Events();
+        this.publish = this.events.publish;
         this.subscribe = this.events.subscribe;
         this.unsubscribe = this.events.unsubscribe;
-        this.publish = this.events.publish;
 
         // "Global" variables
         this.resizeTimer;
@@ -170,6 +170,8 @@ export class VidaView
         document.removeEventListener("mouseup", this.boundMouseUp);
         document.removeEventListener("touchmove", this.boundMouseMove);
         document.removeEventListener("touchend", this.boundMouseUp);
+
+        this.events.unsubscribeAll();
     }
 
     /**
@@ -623,15 +625,14 @@ export class VidaView
 class Events {
 /**
 *      Events. Pub/Sub system for Loosely Coupled logic.
-*      Based on Peter Higgins' port from Dojo to jQuery
+*
+*      Based on the Diva.js events system...
+*      https://github.com/DDMAL/diva.js/blob/master/source/js/utils.js
+*
+*      ... which was in turn loosely based on Peter Higgins' port from Dojo to jQuery
 *      https://github.com/phiggins42/bloody-jquery-plugins/blob/master/pubsub.js
 *
-*      Re-adapted to vanilla Javascript
-*
-*      Copied from https://github.com/DDMAL/diva.js/blob/develop/source/js/utils.js
-*      and adapted to accept arguments on subscription
-*
-*      Poorly adapted into ES6 for Vida6.
+*      Re-adapted to vanilla Javascript, then poorly adapted into ES6 for Vida6.
 */
     constructor()
     {
@@ -639,7 +640,7 @@ class Events {
         let argsCache = {};
         /**
          *      Events.publish
-         *      e.g.: Events.publish("PageDidLoad", [pageIndex, filename, pageSelector], this);
+         *      e.g.: publish("ObjectClicked", [e.target, closestMeasure], this);
          *
          *      @class Events
          *      @method publish
@@ -647,75 +648,76 @@ class Events {
          *      @param args     {Array}
          *      @param scope {Object} Optional
          */
-        this.publish = function(topic, args, scope)
+        this.publish = function (topic, args, scope)
         {
             if (cache[topic])
             {
                 var thisTopic = cache[topic],
                     i = thisTopic.length;
 
-                var thisTopicArgs = argsCache[topic];
-
                 while (i--)
-                    thisTopic[i].apply( scope || this, args || thisTopicArgs[i] || []);
+                    thisTopic[i].apply( scope || this, args || []);
             }
-        }
+        };
         /**
          *      Events.subscribe
-         *      e.g.: var handle = mei.Events.subscribe("HelloEvent", createBoxWorker, [2, 'hello']);
+         *      e.g.: subscribe("ObjectClicked", (obj, measure) => {...})
          *
          *      @class Events
          *      @method subscribe
          *      @param topic {String}
          *      @param callback {Function}
-         *      @param args {Array}
          *      @return Event handler {Array}
          */
-        this.subscribe = function(topic, callback, args)
+        this.subscribe = function (topic, callback)
         {
             if (!cache[topic])
                 cache[topic] = [];
 
-            if (!argsCache[topic])
-                argsCache[topic] = [];
-
             cache[topic].push(callback);
-            argsCache[topic].push(args || []);
-            return [topic, callback, args];
-        }
+            return [topic, callback];
+        };
         /**
          *      Events.unsubscribe
-         *      e.g.: var handle = mei.Events.subscribe("HelloEvent", createBoxWorker, [2, 'hello']);
-         *              mei.Events.unsubscribe(handle);
+         *      e.g.: var handle = subscribe("ObjectClicked", (obj, measure) => {...})
+         *              unsubscribe(handle);
          *
          *      @class Events
          *      @method unsubscribe
          *      @param handle {Array}
-         *      @param args {Array}
-         *      @param completely {Boolean}
+         *      @param completely {Boolean} - Unsubscribe all events for a given topic.
+         *      @return success {Boolean}
          */
-        this.unsubscribe = function(handle, completely)
+        this.unsubscribe = function (handle, completely)
         {
-            var t = handle[0],
-                i = cache[t].length,
-                a = handle[2];
+            var t = handle[0];
 
             if (cache[t])
             {
+                var i = cache[t].length;
                 while (i--)
                 {
                     if (cache[t][i] === handle[1])
                     {
-                        argsCache[t].splice(i, 1);
-                        if (completely)
-                            delete argsCache[t];
-
                         cache[t].splice(i, 1);
                         if (completely)
                             delete cache[t];
+                        return true;
                     }
                 }
             }
-        }
+            return false;
+        };
+        /**
+         *      Events.unsubscribeAll
+         *      e.g.: unsubscribeAll();
+         *
+         *      @class Events
+         *      @method unsubscribe
+         */
+        this.unsubscribeAll = function ()
+        {
+            cache = {};
+        };
     }
 }

@@ -68,7 +68,7 @@ this.addEventListener('message', function (event){
             catch (e) {
                 contactCaller('error', ticket, {'error': "Render of page " + params.pageIndex + " failed:" + e});
             }
-            contactCaller("returnPage", ticket, {'pageIndex': params.pageIndex, 'svg': rendered, 'createOverlay': false});
+            contactCaller("returnPage", ticket, {'pageIndex': params.pageIndex, 'svg': rendered, 'createOverlay': false, 'mei': vrvToolkit.getMEI()});
             break;
 
         case "mei":
