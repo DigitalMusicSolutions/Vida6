@@ -8,7 +8,7 @@ Incoming:
 
 Outgoing:
 -dataLoaded (pageCount)
--returnPage (pageIndex, svg, redoOverlay)
+-returnPage (pageIndex, svg, redoOverlay, mei)
 -mei (mei)
 */
 
@@ -57,7 +57,7 @@ this.addEventListener('message', function (event){
             catch (e) {
                 contactCaller('error', ticket, {'error': "Render of page " + params.pageIndex + " failed:" + e});
             }
-            contactCaller("returnPage", ticket, {'pageIndex': params.pageIndex, 'svg': rendered, 'createOverlay': true});
+            contactCaller("returnPage", ticket, {'pageIndex': params.pageIndex, 'svg': rendered, 'createOverlay': true, 'mei': vrvToolkit.getMEI()});
             break;
 
         case "edit":

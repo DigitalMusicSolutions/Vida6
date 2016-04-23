@@ -98,6 +98,12 @@ export class VidaView
         // initializes ui underneath the parent element, as well as Verovio communication
         this.initializeLayoutAndWorker();
 
+        // Initialize the events system and alias the functions
+        this.events = new Events();
+        this.subscribe = this.events.subscribe;
+        this.unsubscribe = this.events.unsubscribe;
+        this.publish = this.events.publish;
+
         // "Global" variables
         this.resizeTimer;
         this.verovioSettings = {
@@ -277,6 +283,10 @@ export class VidaView
         this.verovioContent = this.ui.svgWrapper.innerHTML;
         this.ui.popup.remove();
         this.reapplyHighlights();
+
+        // reset this.mei to what Verovio thinks it should be
+        this.mei = params.mei;
+        this.events.publish("PageRendered", [this.mei]);
     }
 
     initPopup(text)
@@ -481,9 +491,7 @@ export class VidaView
     objectClickListener(e)
     {
         var closestMeasure = e.target.closest(".measure");
-        if (closestMeasure)
-            console.log("Would have published measureClicked", closestMeasure);
-            // mei.Events.publish('MeasureClicked', [closestMeasure]);
+        if (closestMeasure) this.publish('ObjectClicked', [e.target, closestMeasure]);
         e.stopPropagation();
     }
 
@@ -521,7 +529,6 @@ export class VidaView
         document.addEventListener("touchmove", this.boundMouseMove);
         document.addEventListener("touchend", this.boundMouseUp);
         this.draggingActive = false;
-        console.log("Would have published highlightSelected");
     };
 
     mouseMoveListener(e)
@@ -610,5 +617,105 @@ export class VidaView
     resetHighlights()
     {
         while(this.highlightedCache[0]) this.removeHighlight(this.highlightedCache[0]);
+    }
+}
+
+class Events {
+/**
+*      Events. Pub/Sub system for Loosely Coupled logic.
+*      Based on Peter Higgins' port from Dojo to jQuery
+*      https://github.com/phiggins42/bloody-jquery-plugins/blob/master/pubsub.js
+*
+*      Re-adapted to vanilla Javascript
+*
+*      Copied from https://github.com/DDMAL/diva.js/blob/develop/source/js/utils.js
+*      and adapted to accept arguments on subscription
+*
+*      Poorly adapted into ES6 for Vida6.
+*/
+    constructor()
+    {
+        let cache = {};
+        let argsCache = {};
+        /**
+         *      Events.publish
+         *      e.g.: Events.publish("PageDidLoad", [pageIndex, filename, pageSelector], this);
+         *
+         *      @class Events
+         *      @method publish
+         *      @param topic {String}
+         *      @param args     {Array}
+         *      @param scope {Object} Optional
+         */
+        this.publish = function(topic, args, scope)
+        {
+            if (cache[topic])
+            {
+                var thisTopic = cache[topic],
+                    i = thisTopic.length;
+
+                var thisTopicArgs = argsCache[topic];
+
+                while (i--)
+                    thisTopic[i].apply( scope || this, args || thisTopicArgs[i] || []);
+            }
+        }
+        /**
+         *      Events.subscribe
+         *      e.g.: var handle = mei.Events.subscribe("HelloEvent", createBoxWorker, [2, 'hello']);
+         *
+         *      @class Events
+         *      @method subscribe
+         *      @param topic {String}
+         *      @param callback {Function}
+         *      @param args {Array}
+         *      @return Event handler {Array}
+         */
+        this.subscribe = function(topic, callback, args)
+        {
+            if (!cache[topic])
+                cache[topic] = [];
+
+            if (!argsCache[topic])
+                argsCache[topic] = [];
+
+            cache[topic].push(callback);
+            argsCache[topic].push(args || []);
+            return [topic, callback, args];
+        }
+        /**
+         *      Events.unsubscribe
+         *      e.g.: var handle = mei.Events.subscribe("HelloEvent", createBoxWorker, [2, 'hello']);
+         *              mei.Events.unsubscribe(handle);
+         *
+         *      @class Events
+         *      @method unsubscribe
+         *      @param handle {Array}
+         *      @param args {Array}
+         *      @param completely {Boolean}
+         */
+        this.unsubscribe = function(handle, completely)
+        {
+            var t = handle[0],
+                i = cache[t].length,
+                a = handle[2];
+
+            if (cache[t])
+            {
+                while (i--)
+                {
+                    if (cache[t][i] === handle[1])
+                    {
+                        argsCache[t].splice(i, 1);
+                        if (completely)
+                            delete argsCache[t];
+
+                        cache[t].splice(i, 1);
+                        if (completely)
+                            delete cache[t];
+                    }
+                }
+            }
+        }
     }
 }
