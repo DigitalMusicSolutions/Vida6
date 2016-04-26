@@ -286,8 +286,7 @@ export class VidaView
         this.ui.popup.remove();
         this.reapplyHighlights();
 
-        // reset this.mei to what Verovio thinks it should be
-        this.mei = params.mei;
+        // do not reset this.mei to what Verovio thinks it should be, as that'll cause significant problems
         this.events.publish("PageRendered", [this.mei]);
     }
 
@@ -312,8 +311,9 @@ export class VidaView
         if (!this.mei) return;
 
         this.ui.svgOverlay.innerHTML = this.ui.svgWrapper.innerHTML = this.verovioContent = "";
-        this.verovioSettings.pageHeight = Math.max(this.ui.svgWrapper.clientHeight * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100); // minimal value required by Verovio
-        this.verovioSettings.pageWidth = Math.max(this.ui.svgWrapper.clientWidth * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100); // idem
+        this.verovioSettings.pageHeight = Math.max(this.ui.svgWrapper.clientHeight * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100) >> 0; // minimal value required by Verovio
+        this.verovioSettings.pageWidth = Math.max(this.ui.svgWrapper.clientWidth * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100) >> 0; // idem
+
         this.contactWorker('setOptions', {'options': JSON.stringify(this.verovioSettings)});
         this.contactWorker('loadData', {'mei': this.mei + "\n"}, (params) => {
             for(var pIdx = 0; pIdx < params.pageCount; pIdx++)
