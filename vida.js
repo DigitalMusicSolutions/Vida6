@@ -187,19 +187,24 @@ export class VidaView
             popup: undefined
         };
 
-        this.ui.parentElement.innerHTML = '<div class="vida-page-controls">' +
-            '<div class="vida-prev-page vida-direction-control ' + this.iconClasses.prevPage +'"></div>' +
-            '<div class="vida-zoom-controls">' +
-                '<span class="vida-zoom-in vida-zoom-control ' + this.iconClasses.zoomIn +'"></span>' +
-                '<span class="vida-zoom-out vida-zoom-control ' + this.iconClasses.zoomOut +'"></span>' +
+        this.ui.parentElement.innerHTML = '<div class="vida-wrapper">' +
+            '<div class="vida-toolbar">' +
+                '<div class="vida-page-controls vida-toolbar-block">' +
+                    '<div class="vida-button vida-prev-page vida-direction-control ' + this.iconClasses.prevPage + '"></div>' +
+                    '<div class="vida-button vida-next-page vida-direction-control ' + this.iconClasses.nextPage + '"></div>' +
+                '</div>' +
+                '<div class="vida-orientation-controls vida-button vida-toolbar-block">' +
+                    '<div class="vida-orientation-toggle">Toggle orientation</div>' +
+                '</div>' +
+                '<div class="vida-zoom-controls vida-toolbar-block">' +
+                    '<span class="vida-button vida-zoom-in vida-zoom-control ' + this.iconClasses.zoomIn + '"></span>' +
+                    '<span class="vida-button vida-zoom-out vida-zoom-control ' + this.iconClasses.zoomOut + '"></span>' +
+                '</div>' +
             '</div>' +
-            // '<div class="vida-grid-toggle">Toggle to grid</div>' +
-            '<div class="vida-next-page vida-direction-control ' + this.iconClasses.nextPage +'"></div>' +
-            '<div class="vida-orientation-toggle">Toggle orientation</div>' +
-        '</div>' +
-        '<div class="vida-svg-wrapper vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
-        '<div class="vida-svg-overlay vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
-        '<div class="vida-loading-popup"></div>';
+            '<div class="vida-svg-wrapper vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
+            '<div class="vida-svg-overlay vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
+            '<div class="vida-loading-popup"></div>' +
+        '</div>';
 
         window.addEventListener('resize', this.boundResize);
 
@@ -287,6 +292,7 @@ export class VidaView
         this.reapplyHighlights();
 
         // do not reset this.mei to what Verovio thinks it should be, as that'll cause significant problems
+        this.updateNavIcons();
         this.events.publish("PageRendered", [this.mei]);
     }
 
@@ -455,13 +461,13 @@ export class VidaView
         {
             this.verovioSettings.noLayout = 0;
             for (var dIdx = 0; dIdx < dirControls.length; dIdx++)
-                dirControls[dIdx].style['display'] = 'block';
+                dirControls[dIdx].style['visibility'] = 'visible';
         }
         else
         {
             this.verovioSettings.noLayout = 1;
             for (var dIdx = 0; dIdx < dirControls.length; dIdx++)
-                dirControls[dIdx].style['display'] = 'none';
+                dirControls[dIdx].style['visibility'] = 'hidden';
         }
 
         this.refreshVerovio();
@@ -622,7 +628,6 @@ export class VidaView
     }
 }
 
-class Events {
 /**
 *      Events. Pub/Sub system for Loosely Coupled logic.
 *
@@ -634,10 +639,12 @@ class Events {
 *
 *      Re-adapted to vanilla Javascript, then poorly adapted into ES6 for Vida6.
 */
+class Events {
     constructor()
     {
         let cache = {};
         let argsCache = {};
+
         /**
          *      Events.publish
          *      e.g.: publish("ObjectClicked", [e.target, closestMeasure], this);
@@ -656,9 +663,10 @@ class Events {
                     i = thisTopic.length;
 
                 while (i--)
-                    thisTopic[i].apply( scope || this, args || []);
+                    thisTopic[i].apply(scope || this, args || []);
             }
         };
+
         /**
          *      Events.subscribe
          *      e.g.: subscribe("ObjectClicked", (obj, measure) => {...})
@@ -677,6 +685,7 @@ class Events {
             cache[topic].push(callback);
             return [topic, callback];
         };
+
         /**
          *      Events.unsubscribe
          *      e.g.: var handle = subscribe("ObjectClicked", (obj, measure) => {...})
@@ -708,6 +717,7 @@ class Events {
             }
             return false;
         };
+
         /**
          *      Events.unsubscribeAll
          *      e.g.: unsubscribeAll();
