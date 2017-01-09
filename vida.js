@@ -370,10 +370,10 @@ export class VidaView
 
     updateNavIcons()
     {
-        if (this.currentSystem === this.totalSystems - 1) this.ui.nextPage.style.visibility = 'hidden';
+        if (this.verovioSettings.noLayout || (this.currentSystem === this.totalSystems - 1)) this.ui.nextPage.style.visibility = 'hidden';
         else this.ui.nextPage.style.visibility = 'visible';
 
-        if (this.currentSystem === 0) this.ui.prevPage.style.visibility = 'hidden';
+        if (this.verovioSettings.noLayout || (this.currentSystem === 0)) this.ui.prevPage.style.visibility = 'hidden';
         else this.ui.prevPage.style.visibility = 'visible';
     }
 
@@ -426,20 +426,21 @@ export class VidaView
 
     syncScroll(e)
     {
+        var newTop = this.ui.svgWrapper.scrollTop = e.target.scrollTop;
+        this.ui.svgWrapper.scrollLeft = this.ui.svgOverlay.scrollLeft;
+
+        // If we're in vertical orientation, update this.currentSystem
         if (!this.verovioSettings.noLayout)
         {
-            var newTop = this.ui.svgWrapper.scrollTop = e.target.scrollTop;
-            for(var idx = 0; idx < this.systemData.length; idx++)
+            for (var idx = 0; idx < this.systemData.length; idx++)
             {
-                if(newTop <= this.systemData[idx].topOffset + 25)
+                if (newTop <= this.systemData[idx].topOffset + 25)
                 {
                     this.currentSystem = idx;
                     break;
                 }
             }
         }
-
-        else this.ui.svgWrapper.scrollLeft = this.ui.svgOverlay.scrollLeft;
 
         this.updateNavIcons();
     }
