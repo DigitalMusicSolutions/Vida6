@@ -12,10 +12,10 @@ Outgoing:
 -mei (mei)
 */
 
-let vrvToolkit;
-let vrvSet = false;
+var vrvToolkit;
+var vrvSet = false;
 
-const contactCaller = function (message, ticket, params)
+var contactCaller = function (message, ticket, params)
 {
     postMessage([message, ticket, params]);
 };
