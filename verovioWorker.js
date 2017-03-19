@@ -20,8 +20,24 @@ var contactCaller = function (message, ticket, params)
     postMessage([message, ticket, params]);
 };
 
+// Page index comes in 0-indexed and should be returned 0-indexed, but Verovio requires 1-indexed
+var renderPage = function (index, ticket)
+{
+    try {
+        var rendered = vrvToolkit.renderPage(index + 1);
+        contactCaller("returnPage", ticket, {
+            'pageIndex': index, 
+            'svg': rendered, 
+            'createOverlay': true, 
+            'mei': vrvToolkit.getMEI()
+        });
+    }
+    catch (e) {
+        contactCaller('error', ticket, {'error': "Render of page " + index + " failed:" + e});
+    }
+};
+
 this.addEventListener('message', function (event){
-    var rendered;
     var messageType = event.data[0];
     var ticket = event.data[1];
     var params = event.data[2];
@@ -50,25 +66,18 @@ this.addEventListener('message', function (event){
             vrvToolkit.setOptions(params.options);
             break;
 
-        case "renderPage": // page index comes in 0-indexed and should be returned 0-indexed
-            try {
-                rendered = vrvToolkit.renderPage(params.pageIndex + 1);
-            }
-            catch (e) {
-                contactCaller('error', ticket, {'error': "Render of page " + params.pageIndex + " failed:" + e});
-            }
-            contactCaller("returnPage", ticket, {'pageIndex': params.pageIndex, 'svg': rendered, 'createOverlay': true, 'mei': vrvToolkit.getMEI()});
-            break;
+        case "renderPage":
+           renderPage(params.pageIndex, ticket);
+           break;
 
         case "edit":
-            var res = vrvToolkit.edit(params.action);
             try {
-                rendered = vrvToolkit.renderPage(params.pageIndex + 1);
+                var res = vrvToolkit.edit(params.action);
+                renderPage(params.pageIndex, ticket);
             }
             catch (e) {
-                contactCaller('error', ticket, {'error': "Render of page " + params.pageIndex + " failed:" + e});
+                contactCaller('error', ticket, {'error': "Edit failed:" + e});
             }
-            contactCaller("returnPage", ticket, {'pageIndex': params.pageIndex, 'svg': rendered, 'createOverlay': false, 'mei': vrvToolkit.getMEI()});
             break;
 
         case "mei":

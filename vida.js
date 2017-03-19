@@ -51,6 +51,7 @@ export class VidaController
                 this.tickets[ticket].call(viewObj, params);
                 delete this.tickets[ticket];
             }
+            
             else console.log("Unexpected worker case:", event);
         };
         this.contactWorker('setVerovio', {'location': this.verovioLocation}, workerIndex);
@@ -320,7 +321,7 @@ export class VidaView
         this.verovioSettings.pageHeight = Math.max(this.ui.svgWrapper.clientHeight * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100) >> 0; // minimal value required by Verovio
         this.verovioSettings.pageWidth = Math.max(this.ui.svgWrapper.clientWidth * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100) >> 0; // idem
 
-        this.contactWorker('setOptions', {'options': JSON.stringify(this.verovioSettings)});
+        this.contactWorker('setOptions', {'options': this.verovioSettings});
         this.contactWorker('loadData', {'mei': this.mei + "\n"}, (params) => {
             for(var pIdx = 0; pIdx < params.pageCount; pIdx++)
             {
@@ -572,14 +573,14 @@ export class VidaView
             obj.style["fill"] = "#000";
             obj.style["stroke"] = "#000";
 
-            const editorAction = JSON.stringify({
+            const editorAction = {
                 action: 'drag',
                 param: {
                     elementId: id,
                     x: parseInt(this.dragInfo.x),
                     y: parseInt(scaledY)
                 }
-            });
+            };
 
             this.contactWorker('edit', {'action': editorAction, 'pageIndex': this.clickedPage}, this.renderPage);
             if (this.draggingActive) this.removeHighlight(id);
