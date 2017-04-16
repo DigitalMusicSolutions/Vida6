@@ -24,6 +24,7 @@ var contactCaller = function (message, ticket, params)
 var renderPage = function (index, ticket)
 {
     try {
+        vrvToolkit.redoPagePitchPosLayout();
         var rendered = vrvToolkit.renderPage(index + 1);
         contactCaller("returnPage", ticket, {
             'pageIndex': index, 
