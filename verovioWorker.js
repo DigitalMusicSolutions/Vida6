@@ -63,7 +63,8 @@ this.addEventListener('message', function (event){
             break;
 
         case "setOptions":
-            vrvToolkit.setOptions(params.options);
+        console.log(params.options)
+            vrvToolkit.setOptions(JSON.stringify(params.options));
             break;
 
         case "renderPage":
@@ -72,7 +73,7 @@ this.addEventListener('message', function (event){
 
         case "edit":
             try {
-                var res = vrvToolkit.edit(params.action);
+                var res = vrvToolkit.edit(JSON.stringify(params.action));
                 renderPage(params.pageIndex, ticket);
             }
             catch (e) {
