@@ -143,6 +143,8 @@ export class VidaView
         };
 
         if (options.mei) this.refreshVerovio(options.mei);
+
+        pokeWorker = $.proxy(this.pokeWorker, this);
     }
 
     destroy()
@@ -172,6 +174,28 @@ export class VidaView
         document.removeEventListener("touchend", this.boundMouseUp);
 
         this.events.unsubscribeAll();
+    }
+
+    pokeWorker()
+    {
+        var editStuff = {
+            action: 'insert',
+            param: {
+                elementType: 'note',
+                octave: 4,
+                pname: "C",
+                parentID: "c1"
+            }
+        };
+
+        var self = this;
+        this.controller.contactWorker("edit", {'action': editStuff, 'pageIndex': 0}, 0, (a) => {
+            console.log('hi');
+            self.renderPage(a);
+            self.controller.contactWorker("mei", {}, 0, (mei) => {
+                console.log(mei.mei);
+            });
+        });
     }
 
     /**
@@ -572,14 +596,14 @@ export class VidaView
             obj.style["fill"] = "#000";
             obj.style["stroke"] = "#000";
 
-            const editorAction = JSON.stringify({
+            const editorAction = {
                 action: 'drag',
                 param: {
                     elementId: id,
                     x: parseInt(this.dragInfo.x),
                     y: parseInt(scaledY)
                 }
-            });
+            };
 
             this.contactWorker('edit', {'action': editorAction, 'pageIndex': this.clickedPage}, this.renderPage);
             if (this.draggingActive) this.removeHighlight(id);
