@@ -1,0 +1,27 @@
+{
+  "name": "vida",
+  "version": "1.0.0",
+  "description": "Verovio Image Display Assistant",
+  "main": "gulpfile.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "github.com/ahwitz/vida6.git"
+  },
+  "author": "Andrew Horwitz",
+  "license": "MIT",
+  "devDependencies": {
+    "babel-eslint": "^7.1.1",
+    "connect-livereload": "^0.6.0",
+    "express": "^4.15.2",
+    "gulp": "^3.9.1",
+    "gulp-autoprefixer": "^3.1.1",
+    "gulp-eslint": "^3.0.1",
+    "gulp-express": "^0.3.5",
+    "gulp-sass": "^3.1.0",
+    "http": "0.0.0",
+    "systemjs-builder": "^0.16.4"
+  }
+}

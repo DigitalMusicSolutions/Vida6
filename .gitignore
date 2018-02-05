@@ -1,0 +1,5 @@
+/.project
+build-tools/node_modules
+build-tools/static/jspm_packages
+build-tools/static/js/verovio.min.js
+build-tools/static/css/app.css
