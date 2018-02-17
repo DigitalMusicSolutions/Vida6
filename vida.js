@@ -107,15 +107,18 @@ export class VidaView
 
         // "Global" variables
         this.resizeTimer;
+        this.margin = 50;
         this.verovioSettings = {
             pageHeight: 100,
             pageWidth: 100,
             inputFormat: 'mei', // change at thy own risk
             scale: 40,
-            border: 50,
-            noLayout: 0,    // 1 or 0 (NOT boolean, but mimicing it) for whether the page will display horizontally or vertically
-            ignoreLayout: 1,
-            adjustPageHeight: 1
+            breaks: 'auto',
+            adjustPageHeight: 1,
+            pageMarginBottom: this.margin,
+            pageMarginLeft: this.margin,
+            pageMarginTop: this.margin,
+            pageMarginRight: this.margin
         };
         this.mei = undefined; // saved in Vida as well as the worker, unused for now
         this.verovioContent = undefined; // svg output
@@ -183,19 +186,17 @@ export class VidaView
             action: 'insert',
             param: {
                 elementType: 'note',
-                octave: 4,
-                pname: "C",
+                octave: "5",
+                pname: "c",
                 parentID: "c1"
             }
         };
 
         var self = this;
         this.controller.contactWorker("edit", {'action': editStuff, 'pageIndex': 0}, 0, (a) => {
-            console.log('hi');
             self.renderPage(a);
-            self.controller.contactWorker("mei", {}, 0, (mei) => {
-                console.log(mei.mei);
-            });
+            // self.controller.contactWorker("mei", {}, 0, (mei) => {
+            // });
         });
     }
 
@@ -303,7 +304,7 @@ export class VidaView
         const systems = this.ui.svgWrapper.querySelectorAll('g[class=system]');
         for(var sIdx = 0; sIdx < systems.length; sIdx++)
             this.systemData[sIdx] = {
-                'topOffset': systems[sIdx].getBoundingClientRect().top - vidaOffset - this.verovioSettings.border,
+                'topOffset': systems[sIdx].getBoundingClientRect().top - vidaOffset - this.margin,
                 'id': systems[sIdx].id
             };
 
@@ -342,8 +343,8 @@ export class VidaView
         if (!this.mei) return;
 
         this.ui.svgOverlay.innerHTML = this.ui.svgWrapper.innerHTML = this.verovioContent = "";
-        this.verovioSettings.pageHeight = Math.max(this.ui.svgWrapper.clientHeight * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100) >> 0; // minimal value required by Verovio
-        this.verovioSettings.pageWidth = Math.max(this.ui.svgWrapper.clientWidth * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100) >> 0; // idem
+        this.verovioSettings.pageHeight = Math.max(this.ui.svgWrapper.clientHeight * (100 / this.verovioSettings.scale) - this.margin, 100) >> 0; // minimal value required by Verovio
+        this.verovioSettings.pageWidth = Math.max(this.ui.svgWrapper.clientWidth * (100 / this.verovioSettings.scale) - this.margin, 100) >> 0; // idem
 
         this.contactWorker('setOptions', {'options': this.verovioSettings});
         this.contactWorker('loadData', {'mei': this.mei + "\n"}, (params) => {
@@ -531,6 +532,8 @@ export class VidaView
 
     mouseDownListener(e)
     {
+        if (event.which !== 1) return;
+        console.log('triggered?');
         var t = e.target;
         var id = t.parentNode.attributes.id.value;
         var sysID = t.closest('.system').attributes.id.value;

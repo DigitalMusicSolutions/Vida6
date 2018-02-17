@@ -1,0 +1,472 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<mei xmlns:xlink="http://www.w3.org/1999/xlink"
+     xmlns="http://www.music-encoding.org/ns/mei"
+     meiversion="3.0.0">
+   <meiHead>
+      <fileDesc>
+         <titleStmt>
+            <title>Ein feste Burg ist unser Gott</title>
+            <title type="subordinate">an electronic transcription</title>
+            <respStmt>
+               <persName role="creator"
+                         codedval="11850553X"
+                         authURI="http://d-nb.info/gnd/11850553X"
+                         authority="GND">Johann Sebastian
+                  Bach</persName>
+               <persName role="lyricist"
+                         authority="GND"
+                         authURI=" http://d-nb.info/gnd"
+                         codedval="118575449">Martin Luther</persName>
+               <persName role="encoder">Maja Hartwig</persName>
+               <persName role="encoder">Kristina Richts</persName>
+            </respStmt>
+         </titleStmt>
+         <pubStmt>
+            <respStmt>
+               <corpName role="publisher" codedval="5115204-6" authURI="http://d-nb.info/gnd" authority="GND">Musikwissenschaftliches Seminar, Detmold</corpName>
+            </respStmt>
+            <address>
+               <addrLine>Gartenstrasse 20</addrLine>
+               <addrLine>32756 <geogName codedval="7004442"
+                            authURI="www.getty.edu/research/tools/vocabularies/tgn"
+                            authority="TGN">Detmold</geogName>
+               </addrLine>
+               <addrLine>
+                  <geogName codedval="7000084"
+                            authURI="www.getty.edu/research/tools/vocabularies/tgn"
+                            authority="TGN">Germany</geogName>
+               </addrLine>
+            </address>
+            <date>2011</date>
+            <availability>
+               <useRestrict>This encoding is in the public domain. However, the sources used to
+                  create it may be under copyright. We believe their use by the MEI project
+                  for educational and research purposes is covered by the Fair Use doctrine.
+                  However, we will remove any material from the project archive when requested
+                  to do so by the copyright owner.</useRestrict>
+            </availability>
+         </pubStmt>
+         <seriesStmt>
+            <title>MEI Sample Collection</title>
+            <respStmt>
+               <corpName role="publisher">MEI Project</corpName>
+               <corpName role="funder"
+                         codedval="2007744-0"
+                         authURI="http://d-nb.info/gnd"
+                         authority="GND">German Research
+                  Foundation<address>
+                     <addrLine>Kennedyallee 40</addrLine>
+                     <addrLine>
+                        <geogName codedval="7005090"
+                                  authURI="www.getty.edu/research/tools/vocabularies/tgn"
+                                  authority="TGN">Bonn</geogName>
+                     </addrLine>
+                     <addrLine>
+                        <geogName codedval="7000084"
+                                  authURI="www.getty.edu/research/tools/vocabularies/tgn"
+                                  authority="TGN">Germany</geogName>
+                     </addrLine>
+                  </address>
+               </corpName>
+               <corpName role="funder"
+                         codedval="18183-3"
+                         authURI="http://d-nb.info/gnd/18183-3"
+                         authority="Deutsche Nationalbibliothek">National Endowment for the
+                  Humanities<address>
+                     <addrLine>1100 Pennsylvania Avenue N.W.</addrLine>
+                     <addrLine>
+                        <geogName codedval="7013962"
+                                  authURI="www.getty.edu/research/tools/vocabularies/tgn"
+                                  authority="TGN">Washington, DC</geogName> 20004</addrLine>
+                     <addrLine>
+                        <geogName codedval="7012149"
+                                  authURI="www.getty.edu/research/tools/vocabularies/tgn"
+                                  authority="TGN">United States</geogName>
+                     </addrLine>
+                  </address>
+               </corpName>
+            </respStmt>
+            <identifier>
+               <ref target="http://music-encoding.org/Suport/MEI_Sample_Collection"/>
+            </identifier>
+         </seriesStmt>
+         <sourceDesc>
+            <source>
+               <identifier type="URI">http://www.hausmusik.ch/notenregal/b/bach_joh_sebastian(1685-1750)/389Choralgesaenge-SATB/_._/074.ein_feste_burg_1/ein_feste_burg_1.pdf</identifier>
+               <titleStmt>
+                  <title>Ein feste Burg ist unser Gott</title>
+                  <respStmt>
+                     <persName role="composer"
+                               codedval="11850553X"
+                               authURI="http://d-nb.info/gnd/11850553X"
+                               authority="GND">Johann
+                        Sebastian Bach</persName>
+                     <persName role="lyricist"
+                               authority="GND"
+                               authURI=" http://d-nb.info/gnd"
+                               codedval="118575449">Martin
+                        Luther</persName>
+                  </respStmt>
+               </titleStmt>
+            </source>
+            <source>
+               <identifier type="URI">http://www.hausmusik.ch/notenregal/b/bach_joh_sebastian%281685-1750%29/bwv0525-0771_Orgelwerke/bwv0714-0740_Choralbearbeitungen/</identifier>
+               <titleStmt>
+                  <title>Ein feste Burg ist unser Gott</title>
+               </titleStmt>
+               <pubStmt>
+                  <date isodate="2011-10-10"/>
+                  <respStmt>
+                     <corpName role="publisher">Verein zur Förderung der Hausmusik</corpName>
+                  </respStmt>
+                  <address>
+                     <addrLine>CH-4143 Dornach</addrLine>
+                     <addrLine>Postfach 68</addrLine>
+                  </address>
+                  <availability>
+                     <useRestrict>©2007 Verein zur Förderung der Hausmusik</useRestrict>
+                  </availability>
+               </pubStmt>
+            </source>
+         </sourceDesc>
+      </fileDesc>
+      <encodingDesc>
+         <appInfo>
+            <application xml:id="xsl_mxl2mei_2.2.3" version="2.2.3">
+               <name>MusicXML2MEI</name>
+            </application>
+         </appInfo>
+      </encodingDesc>
+      <workDesc>
+         <work>
+            <titleStmt>
+               <title>Ein feste Burg ist unser Gott</title>
+               <respStmt>
+                  <persName role="composer"
+                            codedval="11850553X"
+                            authURI="http://d-nb.info/gnd/11850553X"
+                            authority="GND">Johann
+                     Sebastian Bach</persName>
+               </respStmt>
+            </titleStmt>
+            <key pname="d" mode="major">D major</key>
+            <meter count="4" unit="4" sym="common"/>
+            <incip>
+               <incipCode form="parsons">*rrduuudddudddudddd</incipCode>
+               <incipText>
+                  <p>Ein´ feste Burg ist unser Gott, ein´ gute Wehr und Waffen</p>
+               </incipText>
+               <score>
+                  <scoreDef meter.count="4"
+                            meter.unit="4"
+                            meter.sym="common"
+                            key.sig="2s"
+                            key.mode="major">
+                     <staffGrp barthru="true" symbol="brace">
+                        <staffDef n="1" lines="5" clef.line="2" clef.shape="G"/>
+                        <staffDef n="2" clef.shape="F" clef.line="4" lines="5"/>
+                     </staffGrp>
+                  </scoreDef>
+                  <section>
+                     <measure n="0" type="upbeat" metcon="false">
+                        <staff n="1">
+                           <layer n="1">
+                              <note pname="d" oct="5" dur="4" stem.dir="up">
+                                 <verse n="1">
+                                    <syl>Ein´</syl>
+                                 </verse>
+                                 <verse n="2">
+                                    <syl>Er</syl>
+                                 </verse>
+                              </note>
+                           </layer>
+                           <layer n="2">
+                              <note pname="a" oct="4" dur="4" stem.dir="down"/>
+                           </layer>
+                        </staff>
+                        <staff n="2">
+                           <layer n="1">
+                              <note pname="f" oct="4" dur="4" stem.dir="up"/>
+                           </layer>
+                           <layer n="2">
+                              <beam>
+                                 <note pname="d" oct="4" dur="8" stem.dir="down"/>
+                                 <note pname="c" oct="4" dur="8" stem.dir="down"/>
+                              </beam>
+                           </layer>
+                        </staff>
+                     </measure>
+                     <measure n="1">
+                        <staff n="1">
+                           <layer n="1">
+                              <note pname="d" oct="5" dur="4" stem.dir="up">
+                                 <verse n="1">
+                                    <syl con="d" wordpos="i">fe</syl>
+                                 </verse>
+                                 <verse n="2">
+                                    <syl>hilft</syl>
+                                 </verse>
+                              </note>
+                              <note pname="d" oct="5" dur="4" stem.dir="up">
+                                 <verse n="1">
+                                    <syl wordpos="t">ste</syl>
+                                 </verse>
+                                 <verse n="2">
+                                    <syl>uns</syl>
+                                 </verse>
+                              </note>
+                              <beam>
+                                 <note pname="a" oct="4" dur="8" stem.dir="up">
+                                    <verse n="1">
+                                       <syl>Burg</syl>
+                                    </verse>
+                                    <verse n="2">
+                                       <syl>frei</syl>
+                                    </verse>
+                                 </note>
+                                 <note pname="b" oct="4" dur="8" stem.dir="up"/>
+                              </beam>
+                              <note pname="c" oct="5" dur="4" stem.dir="up">
+                                 <verse n="1">
+                                    <syl>ist</syl>
+                                 </verse>
+                                 <verse n="2">
+                                    <syl>aus</syl>
+                                 </verse>
+                              </note>
+                           </layer>
+                           <layer n="2">
+                              <note pname="d" oct="4" dur="4" stem.dir="down"/>
+                              <beam>
+                                 <note pname="d" oct="4" dur="8" stem.dir="down"/>
+                                 <note pname="e" oct="4" dur="8" stem.dir="down"/>
+                              </beam>
+                              <note pname="f" oct="4" dur="4" stem.dir="down"/>
+                              <note pname="g" oct="4" dur="4" stem.dir="down"/>
+                           </layer>
+                        </staff>
+                        <staff n="2">
+                           <layer n="1">
+                              <note pname="f" oct="4" dur="4" stem.dir="up"/>
+                              <beam>
+                                 <note pname="b" oct="3" dur="8" stem.dir="up"/>
+                                 <note pname="c" oct="4" dur="8" stem.dir="up"/>
+                              </beam>
+                              <note pname="d" oct="4" dur="4" stem.dir="up"/>
+                              <note pname="e" oct="4" dur="4" stem.dir="up"/>
+                           </layer>
+                           <layer n="2">
+                              <note pname="b" oct="3" dur="4" stem.dir="down"/>
+                              <beam>
+                                 <note pname="a" oct="3" dur="8" stem.dir="down"/>
+                                 <note pname="g" oct="3" dur="8" stem.dir="down"/>
+                              </beam>
+                              <note pname="f" oct="3" dur="4" stem.dir="down"/>
+                              <note pname="e" oct="3" dur="4" stem.dir="down"/>
+                           </layer>
+                        </staff>
+                     </measure>
+                  </section>
+               </score>
+            </incip>
+            <perfMedium>
+               <perfResList>
+                  <perfRes codedval="va">Sopran</perfRes>
+                  <perfRes codedval="vc">Alt</perfRes>
+                  <perfRes codedval="vd">Tenor</perfRes>
+                  <perfRes codedval="vf">Bass</perfRes>
+               </perfResList>
+            </perfMedium>
+            <classification>
+               <termList>
+                  <term classcode="#OCLC_DDC">
+                     <identifier>782</identifier>
+                     <title>Vocal music</title>
+                  </term>
+                  <term classcode="#OSWD">
+                     <identifier>4063783-9</identifier>
+                     <title>Vokalmusik</title>
+                  </term>
+               </termList>
+               <classCode xml:id="OCLC_DDC"
+                          authority="OCLC"
+                          authURI="http://www.oclc.org/dewey/resources/summaries/default.htm#700"/>
+               <classCode xml:id="OSWD"
+                          authURI="#BSZ"
+                          authority="http://www.bsz-bw.de/cgi-bin/oswd-suche.pl"/>
+            </classification>
+         </work>
+      </workDesc>
+      <revisionDesc>
+         <change n="1">
+            <respStmt/>
+            <changeDesc>
+               <p>The original file was generated from a MusicXML file.</p>
+            </changeDesc>
+            <date/>
+         </change>
+         <change n="2">
+            <respStmt>
+               <persName xml:id="MH"> Maja Hartwig </persName>
+            </respStmt>
+            <changeDesc>
+               <p>Transcoded from a MusicXML version 1.0 file on 2011-05-12 using the <ref target="#xsl_mxl2mei_2.2.3">musicxml2mei</ref> stylesheet. </p>
+            </changeDesc>
+            <date isodate="2011-05-12"/>
+         </change>
+         <change n="3">
+            <respStmt>
+               <persName xml:id="KR"> Kristina Richts </persName>
+            </respStmt>
+            <changeDesc>
+               <p> Cleaned up MEI file automatically using <ref target="#xsl_ppq">ppq.xsl</ref>. </p>
+            </changeDesc>
+            <date isodate="2011-10-22"/>
+         </change>
+         <change n="4">
+            <respStmt>
+               <persName resp="#KR"/>
+            </respStmt>
+            <changeDesc>
+               <p> Cleaned up MEI file automatically using <ref target="#xsl_header">Header.xsl</ref>. </p>
+            </changeDesc>
+            <date isodate="2011-12-01"/>
+         </change>
+         <change n="5">
+            <respStmt>
+               <persName resp="#MH"/>
+            </respStmt>
+            <changeDesc>
+               <p>revised header</p>
+            </changeDesc>
+            <date isodate="2013-01-25"/>
+         </change>
+         <change n="6">
+            <respStmt/>
+            <changeDesc>
+               <p>Converted to MEI 2013 using mei2012To2013.xsl, version 1.0 beta</p>
+            </changeDesc>
+            <date isodate="2014-05-30"/>
+         </change>
+         <change n="7">
+            <respStmt/>
+            <changeDesc>
+               <p>Converted to version 3.0.0 using mei21To30.xsl, version
+                  1.0 beta</p>
+            </changeDesc>
+            <date isodate="2015-10-15"/>
+         </change>
+      </revisionDesc>
+   </meiHead>
+   <music>
+      <body>
+         <mdiv>
+            <score>
+               <scoreDef meter.count="4"
+                         meter.unit="4"
+                         meter.sym="common"
+                         key.sig="2s"
+                         key.mode="major">
+                  <staffGrp barthru="true" symbol="brace">
+                     <staffDef n="1" xml:id="P1" lines="5" clef.line="2" clef.shape="G"/>
+                     <staffDef n="2" xml:id="P2" clef.shape="F" clef.line="4" lines="5"/>
+                  </staffGrp>
+               </scoreDef>
+               <section>
+                  <measure n="0" xml:id="d1e43" type="upbeat" metcon="false">
+                     <staff n="1">
+                        <layer n="1">
+                           <chord xml:id="c1" dur="4">
+                              <note xml:id="d1e64" pname="d" oct="5" dur="4" stem.dir="up"/>
+                              <note xml:id="d1e64a" pname="b" oct="4" dur="4" stem.dir="up"/>
+                           </chord>
+                        </layer>
+                     </staff>
+                     <staff n="2">
+                        <layer n="1">
+                           <note xml:id="d1e92" pname="f" oct="4" dur="4" stem.dir="up"/>
+                        </layer>
+                        <layer n="2">
+                           <beam>
+                              <note xml:id="d1e93" pname="d" oct="4" dur="8" stem.dir="down"/>
+                              <note xml:id="d1e94" pname="c" oct="4" dur="8" stem.dir="down"/>
+                           </beam>
+                        </layer>
+                     </staff>
+                  </measure>
+                  <measure n="1" xml:id="d1e303">
+                     <staff n="1">
+                        <layer n="1">
+                           <note xml:id="d1e366" pname="d" oct="5" dur="4" stem.dir="up">
+                              <verse n="1">
+                                 <syl con="d" wordpos="i">fe</syl>
+                              </verse>
+                              <verse n="2">
+                                 <syl>hilft</syl>
+                              </verse>
+                           </note>
+                           <note xml:id="d1e390" pname="d" oct="5" dur="4" stem.dir="up">
+                              <verse n="1">
+                                 <syl wordpos="t">ste</syl>
+                              </verse>
+                              <verse n="2">
+                                 <syl>uns</syl>
+                              </verse>
+                           </note>
+                           <beam>
+                              <note xml:id="d1e414" pname="a" oct="4" dur="8" stem.dir="up">
+                                 <verse n="1">
+                                    <syl>Burg</syl>
+                                 </verse>
+                                 <verse n="2">
+                                    <syl>frei</syl>
+                                 </verse>
+                              </note>
+                              <note xml:id="d1e442" pname="b" oct="4" dur="8" stem.dir="up"/>
+                           </beam>
+                           <note xml:id="d1e458" pname="c" oct="5" dur="4" stem.dir="up">
+                              <verse n="1">
+                                 <syl>ist</syl>
+                              </verse>
+                              <verse n="2">
+                                 <syl>aus</syl>
+                              </verse>
+                           </note>
+                        </layer>
+                        <layer n="2">
+                           <note xml:id="d1e487" pname="d" oct="4" dur="4" stem.dir="down"/>
+                           <beam>
+                              <note xml:id="d1e501" pname="d" oct="4" dur="8" stem.dir="down"/>
+                              <note xml:id="d1e517" pname="e" oct="4" dur="8" stem.dir="down"/>
+                           </beam>
+                           <note xml:id="d1e533" pname="f" oct="4" dur="4" stem.dir="down"/>
+                           <note xml:id="d1e549" pname="g" oct="4" dur="4" stem.dir="down"/>
+                        </layer>
+                     </staff>
+                     <staff n="2">
+                        <layer n="1">
+                           <note xml:id="d1e54" pname="f" oct="4" dur="4" stem.dir="up"/>
+                           <beam>
+                              <note xml:id="d1e55" pname="b" oct="3" dur="8" stem.dir="up"/>
+                              <note xml:id="d1e56" pname="c" oct="4" dur="8" stem.dir="up"/>
+                           </beam>
+                           <note xml:id="d1e57" pname="d" oct="4" dur="4" stem.dir="up"/>
+                           <note xml:id="d1e58" pname="e" oct="4" dur="4" stem.dir="up"/>
+                        </layer>
+                        <layer n="2">
+                           <note xml:id="d1e59" pname="b" oct="3" dur="4" stem.dir="down"/>
+                           <beam>
+                              <note xml:id="d1e60" pname="a" oct="3" dur="8" stem.dir="down"/>
+                              <note xml:id="d1e61" pname="g" oct="3" dur="8" stem.dir="down"/>
+                           </beam>
+                           <note xml:id="d1e62" pname="f" oct="3" dur="4" stem.dir="down"/>
+                           <note xml:id="d1e63" pname="e" oct="3" dur="4" stem.dir="down"/>
+                        </layer>
+                     </staff>
+                  </measure>
+               </section>
+            </score>
+         </mdiv>
+      </body>
+   </music>
+</mei>

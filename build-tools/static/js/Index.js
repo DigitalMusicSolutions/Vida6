@@ -21,7 +21,7 @@ const vidaLeft = new VidaView({
 
 $.ajax({
     method: 'GET',
-    url: "/mei/krebs.mei",
+    url: "/mei/single-note.mei",
     success: data => {
     	// Can't do it as property value because of jQuery's 'this' hijacking
         vidaLeft.refreshVerovio(data);

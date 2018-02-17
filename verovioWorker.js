@@ -2,7 +2,7 @@
 Incoming:
 -setVerovio (verovioLocation)
 -loadData (verovioOptions, dataToLoad)
--renderPage (pageIndex, initOverlay=true)
+-RenderToSVG (pageIndex, initOverlay=true)
 -edit (editorAction, pageIndex, initOverlay)
 -mei
 
@@ -21,10 +21,10 @@ var contactCaller = function (message, ticket, params)
 };
 
 // Page index comes in 0-indexed and should be returned 0-indexed, but Verovio requires 1-indexed
-var renderPage = function (index, ticket)
+var RenderToSVG = function (index, ticket)
 {
     try {
-        var rendered = vrvToolkit.renderPage(index + 1);
+        var rendered = vrvToolkit.renderToSVG(index + 1);
         contactCaller("returnPage", ticket, {
             'pageIndex': index, 
             'svg': rendered, 
@@ -67,13 +67,13 @@ this.addEventListener('message', function (event){
             break;
 
         case "renderPage":
-           renderPage(params.pageIndex, ticket);
+           RenderToSVG(params.pageIndex, ticket);
            break;
 
         case "edit":
             try {
                 var res = vrvToolkit.edit(params.action);
-                renderPage(params.pageIndex, ticket);
+                RenderToSVG(params.pageIndex, ticket);
             }
             catch (e) {
                 contactCaller('error', ticket, {'error': "Edit failed:" + e});
