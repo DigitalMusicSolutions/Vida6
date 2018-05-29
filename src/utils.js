@@ -9,7 +9,8 @@
 *
 *      Re-adapted to vanilla Javascript, then poorly adapted into ES6 for Vida6.
 */
-export class Events {
+export class Events
+{
     constructor()
     {
         let cache = {};

@@ -9,6 +9,7 @@ const eslint = require('gulp-eslint'); // Used to prevent formatting/syntax erro
 const sass = require('gulp-sass'); // Used to compile CSS
 const autoprefixer = require('gulp-autoprefixer'); // Used to compile CSS for older browsers
 const webpack = require('webpack'); // Used to compile JS
+const gulpIf = require('gulp-if');
 
 // For creating a development server
 const express = require('express');
@@ -82,14 +83,10 @@ gulp.task('js:develop', function (callback)
     });
 });
 
-// JS linting task; pass in `--fix` to trigger auto-fix
-var fix = process.argv[3] === '--fix';
+// JS linting tasks; pass in `--fix` to trigger auto-fix
 gulp.task('js:lint', function()
 {
-    return gulp.src('./src/*.js')
-        .pipe(eslint())
-        .pipe(eslint.format())
-        .pipe(eslint.failAfterError());
+    lint('./src/');
 });
 
 // Generalized function for performing the same compilation process on any CSS file
@@ -192,6 +189,7 @@ function fixCondition(file)
     return false;
 };
 
+const fix = process.argv[3] === '--fix';
 function lint(source, fixOverride)
 {
     // If source is a directory, append a wildcard match, otherwise it's a single file and leave it as is

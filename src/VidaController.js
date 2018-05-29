@@ -34,14 +34,15 @@ export class VidaController
         const workerIndex = this.viewWorkers.push(newWorker) - 1; // 1-indexed length to 0-indexed value
         this.views[workerIndex] = viewObj;
 
-        newWorker.onmessage = (event) => {
+        newWorker.onmessage = (event) =>
+        {
             let eventType = event.data[0];
             let ticket = event.data[1];
             let params = event.data[2];
 
-            if (eventType === "error")
+            if (eventType === 'error')
             {
-                console.log("Error message from Verovio:", params);
+                console.log('Error message from Verovio:', params);
                 if (ticket) delete this.tickets[ticket];
             }
 
@@ -50,10 +51,10 @@ export class VidaController
                 this.tickets[ticket].call(viewObj, params);
                 delete this.tickets[ticket];
             }
-            
-            else console.log("Unexpected worker case:", event);
+
+            else console.log('Unexpected worker case:', event);
         };
-        this.contactWorker('setVerovio', {'location': this.verovioLocation}, workerIndex);
+        this.contactWorker('setVerovio', {location: this.verovioLocation}, workerIndex);
         return workerIndex;
     }
 

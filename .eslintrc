@@ -12,8 +12,6 @@
     "rules": {
         "strict": 2,
 
-        "no-console": 2,
-
         "no-shadow-restricted-names": 1,
         "constructor-super": 2,
         "no-const-assign": 2,

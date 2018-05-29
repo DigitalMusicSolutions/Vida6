@@ -15,7 +15,6 @@
 
 import {Events} from './utils';
 
-console.log('hia');
 export class VidaView
 {
     constructor(options)
@@ -27,10 +26,10 @@ export class VidaView
         this.parentElement = options.parentElement;
         options.iconClasses = options.iconClasses || {};
         this.iconClasses = {
-            'nextPage': options.iconClasses.nextPage || "",
-            'prevPage': options.iconClasses.prevPage || "",
-            'zoomIn': options.iconClasses.zoomIn || "",
-            'zoomOut': options.iconClasses.zoomOut || ""
+            nextPage: options.iconClasses.nextPage || '',
+            prevPage: options.iconClasses.prevPage || '',
+            zoomIn: options.iconClasses.zoomIn || '',
+            zoomOut: options.iconClasses.zoomOut || ''
         };
 
         this.controller = options.controller;
@@ -101,7 +100,7 @@ export class VidaView
         this.ui.zoomOut.removeEventListener('click', this.boundZoomOut);
 
         this.ui.svgOverlay.removeEventListener('click', this.boundObjectClick);
-        const notes = this.ui.svgOverlay.querySelectorAll(".note");
+        const notes = this.ui.svgOverlay.querySelectorAll('.note');
         for (var idx = 0; idx < notes.length; idx++)
         {
             const note = notes[idx];
@@ -110,10 +109,10 @@ export class VidaView
             note.removeEventListener('touchstart', this.boundMouseDown);
         }
 
-        document.removeEventListener("mousemove", this.boundMouseMove);
-        document.removeEventListener("mouseup", this.boundMouseUp);
-        document.removeEventListener("touchmove", this.boundMouseMove);
-        document.removeEventListener("touchend", this.boundMouseUp);
+        document.removeEventListener('mousemove', this.boundMouseMove);
+        document.removeEventListener('mouseup', this.boundMouseUp);
+        document.removeEventListener('touchmove', this.boundMouseMove);
+        document.removeEventListener('touchend', this.boundMouseUp);
 
         this.events.unsubscribeAll();
     }
@@ -156,15 +155,15 @@ export class VidaView
         if (this.ui && this.ui.svgOverlay) this.destroy();
 
         // Set up the UI object
-        this.ui.svgWrapper = this.ui.parentElement.querySelector(".vida-svg-wrapper");
-        this.ui.svgOverlay = this.ui.parentElement.querySelector(".vida-svg-overlay");
-        this.ui.controls = this.ui.parentElement.querySelector(".vida-page-controls");
-        this.ui.popup = this.ui.parentElement.querySelector(".vida-loading-popup");
-        this.ui.nextPage = this.ui.parentElement.querySelector(".vida-next-page");
-        this.ui.prevPage = this.ui.parentElement.querySelector(".vida-prev-page");
-        this.ui.orientationToggle = this.ui.parentElement.querySelector(".vida-orientation-toggle");
-        this.ui.zoomIn = this.ui.parentElement.querySelector(".vida-zoom-in");
-        this.ui.zoomOut = this.ui.parentElement.querySelector(".vida-zoom-out");
+        this.ui.svgWrapper = this.ui.parentElement.querySelector('.vida-svg-wrapper');
+        this.ui.svgOverlay = this.ui.parentElement.querySelector('.vida-svg-overlay');
+        this.ui.controls = this.ui.parentElement.querySelector('.vida-page-controls');
+        this.ui.popup = this.ui.parentElement.querySelector('.vida-loading-popup');
+        this.ui.nextPage = this.ui.parentElement.querySelector('.vida-next-page');
+        this.ui.prevPage = this.ui.parentElement.querySelector('.vida-prev-page');
+        this.ui.orientationToggle = this.ui.parentElement.querySelector('.vida-orientation-toggle');
+        this.ui.zoomIn = this.ui.parentElement.querySelector('.vida-zoom-in');
+        this.ui.zoomOut = this.ui.parentElement.querySelector('.vida-zoom-out');
 
         // synchronized scrolling between svg overlay and wrapper
         this.ui.svgOverlay.addEventListener('scroll', this.boundSyncScroll);
@@ -220,24 +219,24 @@ export class VidaView
 
         // Add data about the available systems here
         const systems = this.ui.svgWrapper.querySelectorAll('g[class=system]');
-        for(var sIdx = 0; sIdx < systems.length; sIdx++)
+        for (var sIdx = 0; sIdx < systems.length; sIdx++)
             this.systemData[sIdx] = {
-                'topOffset': systems[sIdx].getBoundingClientRect().top - vidaOffset - this.verovioSettings.border,
-                'id': systems[sIdx].id
+                topOffset: systems[sIdx].getBoundingClientRect().top - vidaOffset - this.verovioSettings.border,
+                id: systems[sIdx].id
             };
 
         // update the global tracking var
         this.totalSystems = this.systemData.length;
 
         // create the overlay, save the content, remove the popup, make sure highlights are up to date
-        if(params.createOverlay) this.createOverlay();
+        if (params.createOverlay) this.createOverlay();
         this.verovioContent = this.ui.svgWrapper.innerHTML;
         this.ui.popup.remove();
         this.reapplyHighlights();
 
         // do not reset this.mei to what Verovio thinks it should be, as that'll cause significant problems
         this.updateNavIcons();
-        this.events.publish("PageRendered", [this.mei]);
+        this.events.publish('PageRendered', [this.mei]);
     }
 
     initPopup(text)
@@ -245,13 +244,13 @@ export class VidaView
         this.ui.popup.style.top = this.ui.parentElement.getBoundingClientRect().top + 50;
         this.ui.popup.style.left = this.ui.parentElement.getBoundingClientRect().left + 30;
         this.ui.popup.innerHTML = text;
-        this.ui.popup.style.display = "block";
+        this.ui.popup.style.display = 'block';
     }
 
     hidePopup()
     {
-        this.ui.popup.innerHTML = "";
-        this.ui.popup.style.display = "none";
+        this.ui.popup.innerHTML = '';
+        this.ui.popup.style.display = 'none';
     }
 
     // Used to reload Verovio, or to provide new MEI
@@ -260,16 +259,17 @@ export class VidaView
         if (mei) this.mei = mei;
         if (!this.mei) return;
 
-        this.ui.svgOverlay.innerHTML = this.ui.svgWrapper.innerHTML = this.verovioContent = "";
+        this.ui.svgOverlay.innerHTML = this.ui.svgWrapper.innerHTML = this.verovioContent = '';
         this.verovioSettings.pageHeight = Math.max(this.ui.svgWrapper.clientHeight * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100) >> 0; // minimal value required by Verovio
         this.verovioSettings.pageWidth = Math.max(this.ui.svgWrapper.clientWidth * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100) >> 0; // idem
 
-        this.contactWorker('setOptions', {'options': this.verovioSettings});
-        this.contactWorker('loadData', {'mei': this.mei + "\n"}, (params) => {
-            for(var pIdx = 0; pIdx < params.pageCount; pIdx++)
+        this.contactWorker('setOptions', {options: this.verovioSettings});
+        this.contactWorker('loadData', {mei: this.mei + '\n'}, (params) =>
+        {
+            for (var pIdx = 0; pIdx < params.pageCount; pIdx++)
             {
                 this.ui.svgWrapper.innerHTML += "<div class='vida-system-wrapper' data-index='" + pIdx + "'></div>";
-                this.contactWorker("renderPage", {'pageIndex': pIdx}, this.renderPage);
+                this.contactWorker('renderPage', {pageIndex: pIdx}, this.renderPage);
             }
         });
     }
@@ -281,24 +281,24 @@ export class VidaView
 
         // Make all <g>s and <path>s transparent, hide the text
         var idx;
-        const gElems = this.ui.svgOverlay.querySelectorAll("g");
+        const gElems = this.ui.svgOverlay.querySelectorAll('g');
         for (idx = 0; idx < gElems.length; idx++)
         {
             gElems[idx].style.strokeOpacity = 0.0;
             gElems[idx].style.fillOpacity = 0.0;
         }
-        const pathElems = this.ui.svgOverlay.querySelectorAll("path");
+        const pathElems = this.ui.svgOverlay.querySelectorAll('path');
         for (idx = 0; idx < pathElems.length; idx++)
         {
             pathElems[idx].style.strokeOpacity = 0.0;
             pathElems[idx].style.fillOpacity = 0.0;
         }
-        delete this.ui.svgOverlay.querySelectorAll("text");
+        delete this.ui.svgOverlay.querySelectorAll('text');
 
         // Add event listeners for click
         this.ui.svgOverlay.removeEventListener('click', this.boundObjectClick);
         this.ui.svgOverlay.addEventListener('click', this.boundObjectClick);
-        const notes = this.ui.svgOverlay.querySelectorAll(".note");
+        const notes = this.ui.svgOverlay.querySelectorAll('.note');
         for (idx = 0; idx < notes.length; idx++)
         {
             const note = notes[idx];
@@ -332,8 +332,8 @@ export class VidaView
 
     scrollToObject(id)
     {
-        var obj = this.ui.svgOverlay.querySelector("#" + id).closest('.vida-svg-wrapper');
-        scrollToPage(obj.parentNode.children.indexOf(obj));
+        var obj = this.ui.svgOverlay.querySelector('#' + id).closest('.vida-svg-wrapper');
+        this.scrollToPage(obj.parentNode.children.indexOf(obj));
     }
 
     scrollToPage(pageNumber)
@@ -401,8 +401,8 @@ export class VidaView
 
     toggleOrientation() // TODO: this setting might not be right. IgnoreLayout instead?
     {
-        var dirControls = this.ui.parentElement.getElementsByClassName("vida-direction-control");
-        if(this.verovioSettings.noLayout === 1)
+        var dirControls = this.ui.parentElement.getElementsByClassName('vida-direction-control');
+        if (this.verovioSettings.noLayout === 1)
         {
             this.verovioSettings.noLayout = 0;
             for (var dIdx = 0; dIdx < dirControls.length; dIdx++)
@@ -443,7 +443,7 @@ export class VidaView
      */
     objectClickListener(e)
     {
-        var closestMeasure = e.target.closest(".measure");
+        var closestMeasure = e.target.closest('.measure');
         if (closestMeasure) this.publish('ObjectClicked', [e.target, closestMeasure]);
         e.stopPropagation();
     }
@@ -454,8 +454,8 @@ export class VidaView
         var id = t.parentNode.attributes.id.value;
         var sysID = t.closest('.system').attributes.id.value;
 
-        for(var idx = 0; idx < this.systemData.length; idx++)
-            if(this.systemData[idx].id == sysID)
+        for (var idx = 0; idx < this.systemData.length; idx++)
+            if (this.systemData[idx].id == sysID)
             {
                 this.clickedPage = idx;
                 break;
@@ -464,23 +464,23 @@ export class VidaView
         this.resetHighlights();
         this.activateHighlight(id);
 
-        var viewBoxSVG = t.closest("svg");
-        var parentSVG = viewBoxSVG.parentNode.closest("svg");
-        var actualSizeArr = viewBoxSVG.getAttribute("viewBox").split(" ");
+        var viewBoxSVG = t.closest('svg');
+        var parentSVG = viewBoxSVG.parentNode.closest('svg');
+        var actualSizeArr = viewBoxSVG.getAttribute('viewBox').split(' ');
         var actualHeight = parseInt(actualSizeArr[3]);
         var svgHeight = parseInt(parentSVG.getAttribute('height'));
         var pixPerPix = (actualHeight / svgHeight);
 
-        this.dragInfo["x"] = t.getAttribute("x") >> 0;
-        this.dragInfo["svgY"] = t.getAttribute("y") >> 0;
-        this.dragInfo["initY"] = e.pageY;
-        this.dragInfo["pixPerPix"] = pixPerPix;
+        this.dragInfo['x'] = t.getAttribute('x') >> 0;
+        this.dragInfo['svgY'] = t.getAttribute('y') >> 0;
+        this.dragInfo['initY'] = e.pageY;
+        this.dragInfo['pixPerPix'] = pixPerPix;
 
         // we haven't started to drag yet, this might be just a selection
-        document.addEventListener("mousemove", this.boundMouseMove);
-        document.addEventListener("mouseup", this.boundMouseUp);
-        document.addEventListener("touchmove", this.boundMouseMove);
-        document.addEventListener("touchend", this.boundMouseUp);
+        document.addEventListener('mousemove', this.boundMouseMove);
+        document.addEventListener('mouseup', this.boundMouseUp);
+        document.addEventListener('touchmove', this.boundMouseMove);
+        document.addEventListener('touchend', this.boundMouseUp);
         this.draggingActive = false;
     };
 
@@ -488,7 +488,7 @@ export class VidaView
     {
         const scaledY = (e.pageY - this.dragInfo.initY) * this.dragInfo.pixPerPix;
         for (var idx = 0; idx < this.highlightedCache.length; idx++)
-            this.ui.svgOverlay.querySelector("#" + this.highlightedCache[idx]).setAttribute("transform", "translate(0, " + scaledY + ")");
+            this.ui.svgOverlay.querySelector('#' + this.highlightedCache[idx]).setAttribute('transform', 'translate(0, ' + scaledY + ')');
 
         this.draggingActive = true;
         e.preventDefault();
@@ -496,10 +496,10 @@ export class VidaView
 
     mouseUpListener(e)
     {
-        document.removeEventListener("mousemove", this.boundMouseMove);
-        document.removeEventListener("mouseup", this.boundMouseUp);
-        document.removeEventListener("touchmove", this.boundMouseMove);
-        document.removeEventListener("touchend", this.boundMouseUp);
+        document.removeEventListener('mousemove', this.boundMouseMove);
+        document.removeEventListener('mouseup', this.boundMouseUp);
+        document.removeEventListener('touchmove', this.boundMouseMove);
+        document.removeEventListener('touchend', this.boundMouseUp);
 
         if (!this.draggingActive) return;
         this.commitChanges(e.pageY);
@@ -510,11 +510,11 @@ export class VidaView
         for (var idx = 0; idx < this.highlightedCache.length; idx++)
         {
             const id = this.highlightedCache[idx];
-            const obj = this.ui.svgOverlay.querySelector("#" + id);
+            const obj = this.ui.svgOverlay.querySelector('#' + id);
             const scaledY = this.dragInfo.svgY + (finalY - this.dragInfo.initY) * this.dragInfo.pixPerPix;
-            obj.style["transform"] =  "translate(" + [0, scaledY] + ")";
-            obj.style["fill"] = "#000";
-            obj.style["stroke"] = "#000";
+            obj.style['transform'] =  'translate(' + [0, scaledY] + ')';
+            obj.style['fill'] = '#000';
+            obj.style['stroke'] = '#000';
 
             const editorAction = {
                 action: 'drag',
@@ -525,13 +525,13 @@ export class VidaView
                 }
             };
 
-            this.contactWorker('edit', {'action': editorAction, 'pageIndex': this.clickedPage}, this.renderPage);
+            this.contactWorker('edit', {action: editorAction, pageIndex: this.clickedPage}, this.renderPage);
             if (this.draggingActive) this.removeHighlight(id);
         }
 
         if (this.draggingActive)
         {
-            this.contactWorker("renderPage", {'pageIndex': this.clickedPage}, this.renderPage);
+            this.contactWorker('renderPage', {pageIndex: this.clickedPage}, this.renderPage);
             this.draggingActive = false;
             this.dragInfo = {};
         }
@@ -545,15 +545,15 @@ export class VidaView
         this.reapplyHighlights();
 
         // Hide the svgWrapper copy of the note
-        this.ui.svgWrapper.querySelector("#" + id).setAttribute('style', "fill-opacity: 0.0; stroke-opacity: 0.0;");
+        this.ui.svgWrapper.querySelector('#' + id).setAttribute('style', 'fill-opacity: 0.0; stroke-opacity: 0.0;');
     }
 
     reapplyHighlights()
     {
-        for(var idx = 0; idx < this.highlightedCache.length; idx++)
+        for (var idx = 0; idx < this.highlightedCache.length; idx++)
         {
-            var targetObj = this.ui.svgOverlay.querySelector("#" + this.highlightedCache[idx]);
-            targetObj.setAttribute('style', "fill: #ff0000; stroke: #ff00000; fill-opacity: 1.0; stroke-opacity: 1.0;");
+            var targetObj = this.ui.svgOverlay.querySelector('#' + this.highlightedCache[idx]);
+            targetObj.setAttribute('style', 'fill: #ff0000; stroke: #ff00000; fill-opacity: 1.0; stroke-opacity: 1.0;');
         }
     }
 
@@ -563,12 +563,12 @@ export class VidaView
         if (idx === -1) return;
 
         var removedID = this.highlightedCache.splice(idx, 1);
-        this.ui.svgWrapper.querySelector("#" + id).setAttribute('style', "fill-opacity: 1.0; stroke-opacity: 1.0;");
-        this.ui.svgOverlay.querySelector("#" + removedID).setAttribute('style', "fill: #000000; stroke: #0000000; fill-opacity: 0.0; stroke-opacity: 0.0;");
+        this.ui.svgWrapper.querySelector('#' + id).setAttribute('style', 'fill-opacity: 1.0; stroke-opacity: 1.0;');
+        this.ui.svgOverlay.querySelector('#' + removedID).setAttribute('style', 'fill: #000000; stroke: #0000000; fill-opacity: 0.0; stroke-opacity: 0.0;');
     }
 
     resetHighlights()
     {
-        while(this.highlightedCache[0]) this.removeHighlight(this.highlightedCache[0]);
+        while (this.highlightedCache[0]) this.removeHighlight(this.highlightedCache[0]);
     }
 }
