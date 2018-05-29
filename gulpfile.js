@@ -18,8 +18,8 @@ const livereloadMiddleware = require('connect-livereload');
 // Things we only need to state once
 const livereload_port = 35728;
 const static_port = 8066;
-const static_location = "static";
-const source_location = "../src/";
+const static_location = "example";
+const source_location = "./src/";
 const static_app = express();
 let static_server;
 let compiler;
@@ -82,10 +82,11 @@ gulp.task('js:develop', function (callback)
     });
 });
 
-// JS linting task
+// JS linting task; pass in `--fix` to trigger auto-fix
+var fix = process.argv[3] === '--fix';
 gulp.task('js:lint', function()
 {
-    return gulp.src(source_location + '**/*.js')
+    return gulp.src('./src/*.js')
         .pipe(eslint())
         .pipe(eslint.format())
         .pipe(eslint.failAfterError());
@@ -117,9 +118,9 @@ function makeWebpackConfig(production)
 {
     var config = {
         mode: 'development',
-        entry: '../vida.js',
+        entry: './vida.js',
         output: {
-            path: path.resolve(__dirname, 'static/js/'),
+            path: path.resolve(__dirname, static_location + '/js/'),
             filename: 'vida.min.js',
             library: 'vida',
             libraryTarget: 'var'
@@ -178,4 +179,29 @@ function webpackDiag(err, stats)
 
     if (stats.compilation.warnings && (stats.compilation.warnings.length > 0))
         return console.error('Compilation warnings:', stats.compilation.warnings);
+};
+
+// Gulp "middleware" - if the file was fixed, returns true to allow gulpIf to overwrite the file
+function fixCondition(file)
+{
+    if (fix && file.eslint && file.eslint.fixed)
+    {
+        console.log('\tAutomatically fixed errors in ' + file.eslint.filePath);
+        return true;
+    }
+    return false;
+};
+
+function lint(source, fixOverride)
+{
+    // If source is a directory, append a wildcard match, otherwise it's a single file and leave it as is
+    var origin = source.slice(source.length - 1) === '/' ? source + '**/*.js' : source;
+
+    var localFix = typeof fixOverride === 'undefined' ? fix : fixOverride;
+
+    if (localFix) console.log(`ESLint running for '${source}' with automatic fixing.`);
+    return gulp.src([origin])
+        .pipe(eslint({fix: localFix}))
+        .pipe(eslint.format())
+        .pipe(gulpIf(fixCondition, gulp.dest(source)));
 };

@@ -29,10 +29,9 @@ Full documentation on all supported methods will come soon.
 
 ## Development
 
-The "build-tools" folder includes a gulp-managed development setup that will automatically compile the above files. The following commands should get you up and running:
+vida6 contains a Gulp-managed development setup (in the `example` folder) that will automatically compile the above files. Running the following commands from this root directory should get you up and running:
 
 ```
-cd build-tools # the directory from which a sample server should be run
 npm install # install all necessary build tools (includes webpack, gulp, and various others)
 node_modules/gulp/gulp.js
 ```
@@ -41,6 +40,6 @@ The `gulp.js` command above will start a server on port 8066 serving a single HT
 
 ## ES5 Usage
 
-Follow the instructions for setting up the development environment above. This will create a file at `build-tools/static/js/vida.min.js`, which is symlinked to `vida.min.js` in the root directory. This can be included within an ES5 environment.
+Follow the instructions for setting up the development environment above. This will create a file at `example/js/vida.min.js`, which is symlinked to `vida.min.js` in the root directory. This can be included within an ES5 environment.
 
-An example of this is provided in `build-tools/static/index.html`.
+An example of this is provided in `example/index.html`.

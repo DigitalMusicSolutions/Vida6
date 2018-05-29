@@ -1,5 +1,6 @@
 vida.min.js
-build-tools/node_modules
-build-tools/static/css/app.css
-build-tools/static/js/vida.min.js
-build-tools/static/js/verovio.min.js
+node_modules
+example/css/app.css
+example/css/vida.css
+example/js/vida.min.js
+example/js/verovio.min.js
