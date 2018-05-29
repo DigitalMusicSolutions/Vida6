@@ -2,14 +2,12 @@
 
 Vida is a JavaScript library built off the [Verovio](http://www.verovio.org/index.xhtml) music notation engraving library. Vida optimizes Verovio for larger scores, isolating the engraving process to a WebWorker to prevent UI freezing, and automatically paginates the score.
 
-## Usage
+## ES6 Usage
 
 The `verovioWorker.js`, `vida.js`, and `vida.css` files comprise Vida.js. All three must be accessible for a Vida instance to render properly. 
 
-### ES6
-
 ```
-import {VidaView, VidaController} from '/path/to/vida';
+import {VidaView, VidaController} from './vida/vida.js';
 
 const vidaController = new VidaController({
     workerLocation: "/path/to/verovioWorker.js",
@@ -28,21 +26,21 @@ Use should be as simple as the code above. This repository does not come with a 
 
 Full documentation on all supported methods will come soon.
 
-### ES5
-
-Can't guarantee that this will always work, but the "vida5.min.js" file should expose VidaController and VidaView classes which follow the same signatures as their ES6 equivalents. The verovioWorker.js file is not compiled into this due to how WebWorkers work, but should also work in ES5. 
-
-I guarantee absolutely nothing in ES5 and will gladly take pull requests on the ES6 code to help it work better.
-
 
 ## Development
 
 The "build-tools" folder includes a gulp-managed development setup that will automatically compile the above files. The following commands should get you up and running:
 
 ```
-cd build-tools; npm install
-cd static; ../node_modules/jspm/jspm.js install
-cd ../; node_modules/gulp/gulp.js
+cd build-tools # the directory from which a sample server should be run
+npm install # install all necessary build tools (includes webpack, gulp, and various others)
+node_modules/gulp/gulp.js
 ```
 
-The `gulp` command above will start a server on port 8066 serving a single HTML page with a Vida instance that takes up the whole screen. Changes to CSS and JS will automatically be reflected in the `verovioWorker.js`, `vida.css`, `vida.js`, and `vida5.min.js` files in the root directory of this repository.
+The `gulp.js` command above will start a server on port 8066 serving a single HTML page with a Vida instance that takes up the whole screen. This also includes autoreload functionality; any changes to the CSS or JS will automatically be reflected in the browser.
+
+## ES5 Usage
+
+Follow the instructions for setting up the development environment above. This will create a file at `build-tools/static/js/vida.min.js`, which is symlinked to `vida.min.js` in the root directory. This can be included within an ES5 environment.
+
+An example of this is provided in `build-tools/static/index.html`.

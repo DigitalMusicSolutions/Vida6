@@ -19,20 +19,25 @@ const livereloadMiddleware = require('connect-livereload');
 const livereload_port = 35728;
 const static_port = 8066;
 const static_location = "static";
+const source_location = "../src/";
 const static_app = express();
-var static_server;
+let static_server;
 let compiler;
 
 // Default gulp task
 gulp.task('default', ['develop']);
 gulp.task('develop', function()
 {
-    // Auto-compile CSS
+    // CSS compilation
+    gulp.start(['style:vida', 'style:app']);
     gulp.watch(static_location + '/css/vida.scss', ['style:vida']); // CSS for vida itself
     gulp.watch(static_location + '/css/app.scss', ['style:app']); // CSS for this demo app
 
-    // Watch the JS and re-compile/run the linter when it changes
-    gulp.watch(static_location + '/js/**/*.js', ['js:develop', 'lint']);
+    // JS compilation/linting
+    gulp.start(['js:develop']);
+    gulp.watch([
+        source_location + '**/*.js'
+    ], ['js:develop']);
 
     // Set up livereload to listen and change when a compiled file (or the index HTML file) changes
     $.livereload.listen({port: livereload_port});
@@ -78,9 +83,9 @@ gulp.task('js:develop', function (callback)
 });
 
 // JS linting task
-gulp.task('lint', function()
+gulp.task('js:lint', function()
 {
-    return gulp.src([static_location + '/js/**/*.js', '!' + static_location + '/js/**/*.min.js'])
+    return gulp.src(source_location + '**/*.js')
         .pipe(eslint())
         .pipe(eslint.format())
         .pipe(eslint.failAfterError());

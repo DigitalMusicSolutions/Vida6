@@ -26,6 +26,7 @@
     "systemjs-builder": "^0.16.4"
   },
   "dependencies": {
+    "gulp-load-plugins": "^1.5.0",
     "webpack": "^4.10.1"
   }
 }

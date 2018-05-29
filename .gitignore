@@ -1,2 +1,5 @@
+vida.min.js
 build-tools/node_modules
 build-tools/static/css/app.css
+build-tools/static/js/vida.min.js
+build-tools/static/js/verovio.min.js
