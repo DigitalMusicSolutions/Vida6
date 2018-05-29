@@ -9,10 +9,39 @@
 <body>
     <div id="app">Vida is loading...</div>
     
-    <script type="text/javascript" src="jspm_packages/system.js"></script>
-    <script type="text/javascript" src="config.js"></script>
+    <script type="text/javascript" src="/js/vida.min.js"></script>
     <script>
-        System.import('js/Index');
+        var VidaController = vida.VidaController;
+        var VidaView = vida.VidaView;
+
+        var vidaController = new VidaController({
+            workerLocation: "./js/verovioWorker.js",
+            verovioLocation: "verovio.min.js"
+        });
+
+        // Create a view
+        var vidaLeft = new VidaView({
+            parentElement: document.getElementById("app"),
+            controller: vidaController,
+            iconClasses: {
+                'nextPage': 'vida-next-page-add',
+                'prevPage': 'vida-prev-page-add',
+                'zoomIn': 'vida-zoom-in-add',
+                'zoomOut': 'vida-zoom-out-add'
+            }
+        });
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/mei/krebs.mei');
+        xhr.onreadystatechange = function()
+        {
+            if (xhr.readyState === 4 && xhr.status === 200)
+            {
+                console.log("loaded", xhr.responseText);
+                vidaLeft.refreshVerovio(xhr.responseText);
+            }
+        };
+        xhr.send(null);
     </script>
 </body>
 </html>
