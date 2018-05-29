@@ -15,10 +15,7 @@
         var VidaView = vida.VidaView;
 
         // Create a single controller pointing to the included copy of Verovio and the worker
-        var vidaController = new VidaController({
-            workerLocation: "./js/verovioWorker.js",
-            verovioLocation: "verovio.min.js"
-        });
+        var vidaController = new VidaController();
 
         // Create a view, linking to #app above and to the created VidaController
         var vidaLeft = new VidaView({

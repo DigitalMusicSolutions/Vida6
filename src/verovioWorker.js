@@ -12,16 +12,17 @@ Outgoing:
 -mei (mei)
 */
 
-var vrvToolkit;
-var vrvSet = false;
+import * as verovio from 'verovio-dev';
 
-var contactCaller = function (message, ticket, params)
+const vrvToolkit = new verovio.toolkit;
+
+function contactCaller(message, ticket, params)
 {
     postMessage([message, ticket, params]);
-};
+}
 
 // Page index comes in 0-indexed and should be returned 0-indexed, but Verovio requires 1-indexed
-var renderPage = function (index, ticket)
+function renderPage(index, ticket)
 {
     try {
         var rendered = vrvToolkit.renderPage(index + 1);
@@ -35,28 +36,15 @@ var renderPage = function (index, ticket)
     catch (e) {
         contactCaller('error', ticket, {'error': "Render of page " + index + " failed:" + e});
     }
-};
+}
 
-this.addEventListener('message', function (event){
+self.addEventListener('message', function (event) {
     var messageType = event.data[0];
     var ticket = event.data[1];
     var params = event.data[2];
 
-    if (!vrvSet && messageType != "setVerovio") {
-        contactCaller('error', ticket, {'error': "setVerovio must be called before the verovioWorker is used!"});
-        console.error("setVerovio must be called before the verovioWorker is used!");
-        return false;
-    }
-
     switch (messageType)
     {
-        case "setVerovio":
-            importScripts(params.location);
-            HateESLint = verovio.toolkit;
-            vrvToolkit = new HateESLint();
-            vrvSet = true;
-            break;
-
         case "loadData":
             vrvToolkit.loadData(params.mei);
             contactCaller('dataLoaded', ticket, {'pageCount': vrvToolkit.getPageCount()});
