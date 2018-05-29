@@ -14,12 +14,13 @@
         var VidaController = vida.VidaController;
         var VidaView = vida.VidaView;
 
+        // Create a single controller pointing to the included copy of Verovio and the worker
         var vidaController = new VidaController({
             workerLocation: "./js/verovioWorker.js",
             verovioLocation: "verovio.min.js"
         });
 
-        // Create a view
+        // Create a view, linking to #app above and to the created VidaController
         var vidaLeft = new VidaView({
             parentElement: document.getElementById("app"),
             controller: vidaController,
@@ -31,13 +32,13 @@
             }
         });
 
+        // Very simple AJAX request to handle a successful load of an included MEI file
         var xhr = new XMLHttpRequest();
         xhr.open('GET', '/mei/krebs.mei');
         xhr.onreadystatechange = function()
         {
             if (xhr.readyState === 4 && xhr.status === 200)
             {
-                console.log("loaded", xhr.responseText);
                 vidaLeft.refreshVerovio(xhr.responseText);
             }
         };
