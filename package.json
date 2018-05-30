@@ -27,8 +27,8 @@
   },
   "dependencies": {
     "gulp-sass": "^3.1.0",
+    "verovio-dev": "^2.0.0-28",
     "webpack": "^4.10.1",
-    "worker-loader": "^2.0.0",
-    "verovio-dev": "^2.0.0-28"
+    "worker-loader": "^2.0.0"
   }
 }

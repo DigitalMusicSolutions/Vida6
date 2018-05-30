@@ -1,5 +1,6 @@
 vida.min.js
 node_modules
+dist/
 example/css/app.css
 example/css/vida.css
 example/js/vida.min.js

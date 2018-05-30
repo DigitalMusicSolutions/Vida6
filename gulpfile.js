@@ -25,6 +25,18 @@ const static_app = express();
 let static_server;
 let compiler;
 
+const browserSupport = [
+    'ie >= 11',
+    'ie_mob >= 11',
+    'ff >= 30',
+    'chrome >= 21',
+    'safari >= 8',
+    'opera >= 23',
+    'ios >= 8',
+    'android >= 4.4',
+    'bb >= 10'
+];
+
 // Default gulp task
 gulp.task('default', ['develop']);
 gulp.task('develop', function()
@@ -95,35 +107,31 @@ var buildCSS = function(which)
     return gulp.src(static_location + "/css/" + which + ".scss")
         .pipe(sass().on('error', sass.logError))
         .pipe(autoprefixer({
-            browsers: [
-                'ie >= 11',
-                'ie_mob >= 11',
-                'ff >= 30',
-                'chrome >= 21',
-                'safari >= 8',
-                'opera >= 23',
-                'ios >= 8',
-                'android >= 4.4',
-                'bb >= 10'
-            ]
+            browsers: browserSupport
         }))
         .pipe(gulp.dest(static_location + "/css/"), {overwrite: true});
 };
 
 // Generalized function for performing the same compilation process on any JS file
 function makeWebpackConfig(production)
-{
+{   
     var config = {
         mode: 'development',
-        entry: './vida.js',
-        output: {
-            path: path.resolve(__dirname, static_location + '/js/'),
-            filename: 'vida.min.js',
-            library: 'vida',
-            libraryTarget: 'var'
+        entry: {
+            vida: './vida.js'
         },
         resolve: {
             extensions: ['.js']
+        },
+        output: {
+            path: path.resolve(__dirname, 'dist/'),
+            filename: '[name].min.js',
+            library: 'vida',
+            libraryTarget: 'var',
+            globalObject: 'this'
+        },
+        node: {
+            fs: 'empty'
         }
     };
 
@@ -132,12 +140,6 @@ function makeWebpackConfig(production)
     {
         config.mode = 'production'; // Turn on a bunch of code optimizations/minification stuff
         config.watch = false; // Prevent live changes on production
-
-        config.performance = { // This just avoids Webpack warning us about what we already know (that a ~600KB JS file is large)
-            maxAssetSize: 700000,
-            maxEntrypointSize: 700000
-        };
-
         config.module = { // Babel transpilation for certain browser targets
             rules: [
                 {
@@ -156,10 +158,6 @@ function makeWebpackConfig(production)
                 }
             ]
         };
-    }
-    else
-    {
-        config.mode = 'development'; // https://www.youtube.com/watch?v=oxEcGmD8WvA
     }
 
     return config;

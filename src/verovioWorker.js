@@ -12,9 +12,15 @@ Outgoing:
 -mei (mei)
 */
 
-import * as verovio from 'verovio-dev';
-
-const vrvToolkit = new verovio.toolkit;
+/**
+ * Create the initial instance of the toolkit
+ * - Make a separate webpack chunk so that loading parent files doesn't take forever
+ * - Use RequireJS import syntax because that's what Webpack recommends
+ */
+let vrvToolkit;
+import(/* webpackChunkName: "verovio-dev" */ 'verovio-dev').then(verovio => {
+    vrvToolkit = verovio.toolkit();
+});
 
 function contactCaller(message, ticket, params)
 {
@@ -42,6 +48,12 @@ self.addEventListener('message', function (event) {
     var messageType = event.data[0];
     var ticket = event.data[1];
     var params = event.data[2];
+
+    if (!vrvToolkit)
+    {
+        contactCaller('error', ticket, {'error': "Verovio has not finished loading yet!"});
+        return;
+    }
 
     switch (messageType)
     {

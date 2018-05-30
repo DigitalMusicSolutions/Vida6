@@ -5,7 +5,7 @@
  * Authors: Andrew Horwitz
  */
 
-import VerovioWorker from 'worker-loader?name=./verovioWorker-compiled.js&inline=true&publicPath=/js/!./verovioWorker.js';
+import * as VerovioWorker from 'worker-loader?name=./VerovioWorker-compiled.js&publicPath=/js/!./VerovioWorker.js';
 
 export class VidaController
 {
@@ -23,7 +23,7 @@ export class VidaController
     register(viewObj)
     {
         const newWorker = new VerovioWorker();
-        const workerIndex = this.viewWorkers.push(newWorker) - 1; // 1-indexed length to 0-indexed value
+        const workerIndex = this.viewWorkers.push(newWorker) - 1; // push returns length; convert 1-indexed length to 0-indexed value
         this.views[workerIndex] = viewObj;
 
         newWorker.onmessage = (event) =>
