@@ -47,19 +47,28 @@ export class VidaView
         this.subscribe = this.events.subscribe;
         this.unsubscribe = this.events.unsubscribe;
 
-        // "Global" variables
-        this.resizeTimer;
         this.verovioSettings = {
+            // Formatting for line breaks and identifying that we're working with MEI
             breaks: 'auto',
             inputFormat: 'mei',
+
+            // Conserve space for the viewer by not showing a footer and capping the page height
+            adjustPageHeight: true,
+            noFooter: true,
+
+            // These are all default values and are overridden further down in `VidaView:refreshVerovio`
             pageHeight: 2970,
             pageWidth: 2100,
             pageMarginLeft: 50,
             pageMarginRight: 50,
             pageMarginTop: 50,
-            pageMarginBottom: 50
+            pageMarginBottom: 50,
+            scale: 100
         };
-        this.mei = undefined; // saved in Vida as well as the worker, unused for now
+
+        // "Global" variables
+        this.resizeTimer;
+        this.mei = undefined; // saved in Vida as well as the worker; there are cases where Verovio's interpretation
         this.verovioContent = undefined; // svg output
         this.systemData = [ // stores offsets and ids of each system
             /* {
@@ -191,14 +200,8 @@ export class VidaView
     }
 
     /**
-     * Code for contacting the controller work; renderPage is used as the callback multiple times.
+     * Code for contacting the controller; renderPage is used as the callback multiple times.
      */
-
-    getViewIndex()
-    {
-        return this.viewIndex;
-    }
-
     contactWorker(messageType, params, callback)
     {
         this.controller.contactWorker(messageType, params, this.viewIndex, callback);
@@ -232,20 +235,6 @@ export class VidaView
         this.events.publish('PageRendered', [this.mei]);
     }
 
-    initPopup(text)
-    {
-        this.ui.popup.style.top = this.ui.parentElement.getBoundingClientRect().top + 50;
-        this.ui.popup.style.left = this.ui.parentElement.getBoundingClientRect().left + 30;
-        this.ui.popup.innerHTML = text;
-        this.ui.popup.style.display = 'block';
-    }
-
-    hidePopup()
-    {
-        this.ui.popup.innerHTML = '';
-        this.ui.popup.style.display = 'none';
-    }
-
     // Used to reload Verovio, or to provide new MEI
     refreshVerovio(mei)
     {
@@ -253,8 +242,12 @@ export class VidaView
         if (!this.mei) return;
 
         this.ui.svgOverlay.innerHTML = this.ui.svgWrapper.innerHTML = this.verovioContent = '';
-        this.verovioSettings.pageHeight = Math.max(this.ui.svgWrapper.clientHeight * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100) >> 0; // minimal value required by Verovio
-        this.verovioSettings.pageWidth = Math.max(this.ui.svgWrapper.clientWidth * (100 / this.verovioSettings.scale) - this.verovioSettings.border, 100) >> 0; // idem
+
+        // Verovio pageHeight should be the default regardless, but reset the pageWidth to be whatever the effective viewport width is
+        this.verovioSettings.pageWidth = 
+            this.ui.svgWrapper.clientWidth // base wrapper width
+            * (100 / this.verovioSettings.scale) // make sure the system takes up the full available width
+            - (this.verovioSettings.pageMarginLeft + this.verovioSettings.pageMarginRight); // minus margins
 
         this.contactWorker('setOptions', {options: this.verovioSettings});
         this.contactWorker('loadData', {mei: this.mei + '\n'}, (params) =>

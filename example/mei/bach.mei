@@ -15,7 +15,7 @@
          </titleStmt>
          <pubStmt>
             <respStmt>
-               <corpName codedval="5115204-6" authURI="http://d-nb.info/gnd" authority="GND">Musikwissenschaftliches Seminar &lt;<geogName codedval="7004442"
+               <corpName role="publisher" codedval="5115204-6" authURI="http://d-nb.info/gnd" authority="GND">Musikwissenschaftliches Seminar &lt;<geogName codedval="7004442"
                             authURI="www.getty.edu/research/tools/vocabularies/tgn"
                             authority="TGN">Detmold</geogName>&gt;</corpName>
             </respStmt>
@@ -243,7 +243,7 @@
          <change n="4">
             <respStmt/>
             <changeDesc>
-               <p>Converted to version 3.0.0 using mei2013To2015.xsl, version
+               <p>Converted to version 3.0.0 using mei21To30.xsl, version
                   1.0 beta</p>
             </changeDesc>
             <date isodate="2015-10-15"/>
@@ -1245,24 +1245,5 @@
             </score>
          </mdiv>
       </body>
-      <performance>
-        <recording>
-           <avFile id="av1" target="audio_data/bach.wav" label="Bach (Chorus)"/>
-        </recording>
-      </performance>
-      <timeline xml:id="m-85324c75-141f-424b-9cac-61876cf98ec6" origin="w01" avref="av1"><when xml:id="w0" data="d1e15" absolute=""></when>
-        <when xml:id="w00" data="d1e15" absolute="3.525"></when>
-        <when xml:id="w01" data="d1e144" absolute="4.218"></when>
-        <when xml:id="w02" data="d1e369" absolute="7.301"></when>
-        <when xml:id="w03" data="d1e598" absolute="10.131"></when>
-        <when xml:id="w04" data="d1e831" absolute="14.869"></when>
-        <when xml:id="w05" data="d1e1106" absolute="17.609"></when>
-        <when xml:id="w06" data="d1e1411" absolute="20.418"></when>
-        <when xml:id="w07" data="d1e1618" absolute="25.605"></when>
-        <when xml:id="w08" data="d1e1917" absolute="28.873"></when>
-        <when xml:id="w09" data="d1e2210" absolute="31.773"></when>
-        <when xml:id="w10" data="d1e2410" absolute="36.838"></when>
-        <when xml:id="w10" data="d1e2660" absolute="41.069"></when>
-      </timeline>
    </music>
 </mei>

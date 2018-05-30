@@ -55,7 +55,7 @@ gulp.task('develop', function()
     // Set up livereload to listen and change when a compiled file (or the index HTML file) changes
     $.livereload.listen({port: livereload_port});
     gulp.watch([
-        static_location + '/js/vida.min.js',
+        static_location + '/js/**/*.js',
         static_location + '/index.html',
         static_location + '/css/*.css'
     ], $.livereload.changed);

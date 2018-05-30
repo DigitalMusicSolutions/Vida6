@@ -31,7 +31,7 @@ function contactCaller(message, ticket, params)
 function renderPage(index, ticket)
 {
     try {
-        var rendered = vrvToolkit.renderPage(index + 1);
+        var rendered = vrvToolkit.renderToSVG(index + 1);
         contactCaller("returnPage", ticket, {
             'pageIndex': index, 
             'svg': rendered, 
