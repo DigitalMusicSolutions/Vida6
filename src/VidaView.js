@@ -50,14 +50,14 @@ export class VidaView
         // "Global" variables
         this.resizeTimer;
         this.verovioSettings = {
-            pageHeight: 100,
-            pageWidth: 100,
-            inputFormat: 'mei', // change at thy own risk
-            scale: 40,
-            border: 50,
-            noLayout: 0,    // 1 or 0 (NOT boolean, but mimicing it) for whether the page will display horizontally or vertically
-            ignoreLayout: 1,
-            adjustPageHeight: 1
+            breaks: 'auto',
+            inputFormat: 'mei',
+            pageHeight: 2970,
+            pageWidth: 2100,
+            pageMarginLeft: 50,
+            pageMarginRight: 50,
+            pageMarginTop: 50,
+            pageMarginBottom: 50
         };
         this.mei = undefined; // saved in Vida as well as the worker, unused for now
         this.verovioContent = undefined; // svg output
@@ -95,7 +95,6 @@ export class VidaView
         this.ui.svgOverlay.removeEventListener('scroll', this.boundSyncScroll);
         this.ui.nextPage.removeEventListener('click', this.boundGotoNext);
         this.ui.prevPage.removeEventListener('click', this.boundGotoPrev);
-        this.ui.orientationToggle.removeEventListener('click', this.boundOrientationToggle);
         this.ui.zoomIn.removeEventListener('click', this.boundZoomIn);
         this.ui.zoomOut.removeEventListener('click', this.boundZoomOut);
 
@@ -136,9 +135,6 @@ export class VidaView
                     '<div class="vida-button vida-prev-page vida-direction-control ' + this.iconClasses.prevPage + '"></div>' +
                     '<div class="vida-button vida-next-page vida-direction-control ' + this.iconClasses.nextPage + '"></div>' +
                 '</div>' +
-                '<div class="vida-orientation-controls vida-button vida-toolbar-block">' +
-                    '<div class="vida-orientation-toggle">Toggle orientation</div>' +
-                '</div>' +
                 '<div class="vida-zoom-controls vida-toolbar-block">' +
                     '<span class="vida-button vida-zoom-in vida-zoom-control ' + this.iconClasses.zoomIn + '"></span>' +
                     '<span class="vida-button vida-zoom-out vida-zoom-control ' + this.iconClasses.zoomOut + '"></span>' +
@@ -161,7 +157,6 @@ export class VidaView
         this.ui.popup = this.ui.parentElement.querySelector('.vida-loading-popup');
         this.ui.nextPage = this.ui.parentElement.querySelector('.vida-next-page');
         this.ui.prevPage = this.ui.parentElement.querySelector('.vida-prev-page');
-        this.ui.orientationToggle = this.ui.parentElement.querySelector('.vida-orientation-toggle');
         this.ui.zoomIn = this.ui.parentElement.querySelector('.vida-zoom-in');
         this.ui.zoomOut = this.ui.parentElement.querySelector('.vida-zoom-out');
 
@@ -171,7 +166,6 @@ export class VidaView
         // control bar events
         this.ui.nextPage.addEventListener('click', this.boundGotoNext);
         this.ui.prevPage.addEventListener('click', this.boundGotoPrev);
-        this.ui.orientationToggle.addEventListener('click', this.boundOrientationToggle);
         this.ui.zoomIn.addEventListener('click', this.boundZoomIn);
         this.ui.zoomOut.addEventListener('click', this.boundZoomOut);
 
@@ -185,7 +179,6 @@ export class VidaView
         this.boundSyncScroll = (evt) => this.syncScroll(evt);
         this.boundGotoNext = (evt) => this.gotoNextPage(evt);
         this.boundGotoPrev = (evt) => this.gotoPrevPage(evt);
-        this.boundOrientationToggle = (evt) => this.toggleOrientation(evt);
         this.boundZoomIn = (evt) => this.zoomIn(evt);
         this.boundZoomOut = (evt) => this.zoomOut(evt);
         this.boundObjectClick = (evt) => this.objectClickListener(evt);
@@ -397,25 +390,6 @@ export class VidaView
     gotoPrevPage()
     {
         if (this.currentSystem > 0) this.scrollToPage(this.currentSystem - 1);
-    }
-
-    toggleOrientation() // TODO: this setting might not be right. IgnoreLayout instead?
-    {
-        var dirControls = this.ui.parentElement.getElementsByClassName('vida-direction-control');
-        if (this.verovioSettings.noLayout === 1)
-        {
-            this.verovioSettings.noLayout = 0;
-            for (var dIdx = 0; dIdx < dirControls.length; dIdx++)
-                dirControls[dIdx].style['visibility'] = 'visible';
-        }
-        else
-        {
-            this.verovioSettings.noLayout = 1;
-            for (var dIdx = 0; dIdx < dirControls.length; dIdx++)
-                dirControls[dIdx].style['visibility'] = 'hidden';
-        }
-
-        this.refreshVerovio();
     }
 
     zoomIn()
