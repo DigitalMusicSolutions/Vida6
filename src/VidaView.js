@@ -70,17 +70,12 @@ export class VidaView
         this.resizeTimer;
         this.mei = undefined; // saved in Vida as well as the worker; there are cases where Verovio's interpretation
         this.verovioContent = undefined; // svg output
-        this.systemData = [ // stores offsets and ids of each system
-            /* {
-                'topOffset':
-                'id':
-            } */
-        ];
+
+        // Vida ensures one system per Verovio page; track the current system/page and total count
         this.currentSystem = 0; // topmost system object within the Vida display
-        this.totalSystems = 0; // total number of system objects
+        this.totalSystems = 1; // total number of system objects; we can safely assume it'll be at least one
 
         // For dragging
-        this.clickedPage; // last clicked page
         this.draggingActive; // boolean "active"
         this.highlightedCache = [];
         this.dragInfo = {
@@ -134,8 +129,7 @@ export class VidaView
             parentElement: this.parentElement, // must be DOM node
             svgWrapper: undefined,
             svgOverlay: undefined,
-            controls: undefined,
-            popup: undefined
+            controls: undefined
         };
 
         this.ui.parentElement.innerHTML = '<div class="vida-wrapper">' +
@@ -149,9 +143,8 @@ export class VidaView
                     '<span class="vida-button vida-zoom-out vida-zoom-control ' + this.iconClasses.zoomOut + '"></span>' +
                 '</div>' +
             '</div>' +
-            '<div class="vida-svg-wrapper vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
+            '<div class="vida-svg-wrapper vida-svg-object" style="z-index: 1; position:absolute;">Verovio is loading...</div>' +
             '<div class="vida-svg-overlay vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
-            '<div class="vida-loading-popup"></div>' +
         '</div>';
 
         window.addEventListener('resize', this.boundResize);
@@ -163,7 +156,6 @@ export class VidaView
         this.ui.svgWrapper = this.ui.parentElement.querySelector('.vida-svg-wrapper');
         this.ui.svgOverlay = this.ui.parentElement.querySelector('.vida-svg-overlay');
         this.ui.controls = this.ui.parentElement.querySelector('.vida-page-controls');
-        this.ui.popup = this.ui.parentElement.querySelector('.vida-loading-popup');
         this.ui.nextPage = this.ui.parentElement.querySelector('.vida-next-page');
         this.ui.prevPage = this.ui.parentElement.querySelector('.vida-prev-page');
         this.ui.zoomIn = this.ui.parentElement.querySelector('.vida-zoom-in');
@@ -186,8 +178,8 @@ export class VidaView
     bindListeners()
     {
         this.boundSyncScroll = (evt) => this.syncScroll(evt);
-        this.boundGotoNext = (evt) => this.gotoNextPage(evt);
-        this.boundGotoPrev = (evt) => this.gotoPrevPage(evt);
+        this.boundGotoNext = (evt) => this.gotoNextSystem(evt);
+        this.boundGotoPrev = (evt) => this.gotoPrevSystem(evt);
         this.boundZoomIn = (evt) => this.zoomIn(evt);
         this.boundZoomOut = (evt) => this.zoomOut(evt);
         this.boundObjectClick = (evt) => this.objectClickListener(evt);
@@ -210,30 +202,23 @@ export class VidaView
     renderPage(params)
     {
         const vidaOffset = this.ui.svgWrapper.getBoundingClientRect().top;
-        const systemWrapper = this.ui.parentElement.querySelector(".vida-system-wrapper[data-index='" + params.pageIndex + "']");
-        systemWrapper.innerHTML = params.svg;
+        this.ui.svgWrapper.innerHTML = params.svg;
 
-        // Add data about the available systems here
-        const systems = this.ui.svgWrapper.querySelectorAll('g[class=system]');
-        for (var sIdx = 0; sIdx < systems.length; sIdx++)
-            this.systemData[sIdx] = {
-                topOffset: systems[sIdx].getBoundingClientRect().top - vidaOffset - this.verovioSettings.border,
-                id: systems[sIdx].id
-            };
-
-        // update the global tracking var
-        this.totalSystems = this.systemData.length;
-
-        // create the overlay, save the content, remove the popup, make sure highlights are up to date
+        // create the overlay, save the content, make sure highlights are up to date
         if (params.createOverlay) this.createOverlay();
         this.verovioContent = this.ui.svgWrapper.innerHTML;
-        this.ui.popup.remove();
         this.reapplyHighlights();
 
         // do not reset this.mei to what Verovio thinks it should be, as that'll cause significant problems
         this.updateNavIcons();
         this.events.publish('PageRendered', [this.mei]);
     }
+
+    updateSettings(rerender)
+    {
+        this.contactWorker('setOptions', {options: this.verovioSettings});
+        if (rerender) this.renderCurrentPage();
+    };
 
     // Used to reload Verovio, or to provide new MEI
     refreshVerovio(mei)
@@ -244,19 +229,22 @@ export class VidaView
         this.ui.svgOverlay.innerHTML = this.ui.svgWrapper.innerHTML = this.verovioContent = '';
 
         // Verovio pageHeight should be the default regardless, but reset the pageWidth to be whatever the effective viewport width is
+        this.verovioSettings.pageHeight = 
+            this.ui.svgWrapper.clientHeight // base wrapper width
+            * (100 / this.verovioSettings.scale) // make sure the system takes up the full available width
+            - (this.verovioSettings.pageMarginTop + this.verovioSettings.pageMarginBottom); // minus margins
+
         this.verovioSettings.pageWidth = 
             this.ui.svgWrapper.clientWidth // base wrapper width
             * (100 / this.verovioSettings.scale) // make sure the system takes up the full available width
             - (this.verovioSettings.pageMarginLeft + this.verovioSettings.pageMarginRight); // minus margins
 
-        this.contactWorker('setOptions', {options: this.verovioSettings});
+        this.updateSettings(false);
         this.contactWorker('loadData', {mei: this.mei + '\n'}, (params) =>
         {
-            for (var pIdx = 0; pIdx < params.pageCount; pIdx++)
-            {
-                this.ui.svgWrapper.innerHTML += "<div class='vida-system-wrapper' data-index='" + pIdx + "'></div>";
-                this.contactWorker('renderPage', {pageIndex: pIdx}, this.renderPage);
-            }
+            this.totalSystems = params.pageCount;
+            this.currentSystem = Math.min(this.currentSystem, this.totalSystems);
+            this.renderCurrentPage();
         });
     }
 
@@ -294,8 +282,6 @@ export class VidaView
             note.addEventListener('mousedown', this.boundMouseDown);
             note.addEventListener('touchstart', this.boundMouseDown);
         }
-        // this.ui.svgOverlay.querySelectorAll("defs").append("filter").attr("id", "selector");
-        // resizeComponents();
     }
 
     updateNavIcons()
@@ -316,17 +302,30 @@ export class VidaView
         else this.ui.zoomOut.style.visibility = 'visible';
     }
 
-    scrollToObject(id)
+    /**
+     * Navigate to the next page
+     */
+    goToSystem(pageNumber)
     {
-        var obj = this.ui.svgOverlay.querySelector('#' + id).closest('.vida-svg-wrapper');
-        this.scrollToPage(obj.parentNode.children.indexOf(obj));
+        this.currentSystem = pageNumber;
+        this.renderCurrentPage();
     }
 
-    scrollToPage(pageNumber)
+    renderCurrentPage()
     {
-        var toScrollTo = this.systemData[pageNumber].topOffset;
-        this.ui.svgOverlay.scrollTop = toScrollTo;
-        this.updateNavIcons();
+        this.contactWorker('renderPage', {pageIndex: this.currentSystem}, this.renderPage);
+    }
+
+    // Shortcurt for above with safety for max possible system
+    gotoNextSystem()
+    {
+        if (this.currentSystem < (this.totalSystems - 1)) this.goToSystem(this.currentSystem + 1);
+    }
+
+    // Shortcurt for above with safety for min possible system
+    gotoPrevSystem()
+    {
+        if (this.currentSystem > 0) this.goToSystem(this.currentSystem - 1);
     }
 
     /**
@@ -346,7 +345,11 @@ export class VidaView
         }, 200);
     }
 
-    // Abstracted out because it's reused
+    /**
+     * Because the svgWrapper and svgOverlay elements are both position:absolute, make sure they
+     *  have the same positioning so that they can be overlaid and clicks can register on the
+     *  correct notehead.
+     */
     updateDims()
     {
         this.ui.svgOverlay.style.height = this.ui.svgWrapper.style.height = this.ui.parentElement.clientHeight - this.ui.controls.clientHeight;
@@ -354,55 +357,34 @@ export class VidaView
         this.ui.svgOverlay.style.width = this.ui.svgWrapper.style.width = this.ui.parentElement.clientWidth;
     }
 
+    /**
+     * Similarly, in case of overflow, make sure that scrolling in the overlay (which this function
+     *  is bound to) triggers the same scroll on the svgWrapper element too.
+     */
     syncScroll(e)
     {
-        var newTop = this.ui.svgWrapper.scrollTop = e.target.scrollTop;
-        this.ui.svgWrapper.scrollLeft = this.ui.svgOverlay.scrollLeft;
-
-        // If we're in vertical orientation, update this.currentSystem
-        if (!this.verovioSettings.noLayout)
-        {
-            for (var idx = 0; idx < this.systemData.length; idx++)
-            {
-                if (newTop <= this.systemData[idx].topOffset + 25)
-                {
-                    this.currentSystem = idx;
-                    break;
-                }
-            }
-        }
-
-        this.updateNavIcons();
+        this.ui.svgWrapper.scrollTop = e.target.scrollTop;
+        this.ui.svgWrapper.scrollLeft = e.target.scrollLeft;
     }
 
-    gotoNextPage()
-    {
-        if (this.currentSystem < this.totalSystems - 1) this.scrollToPage(this.currentSystem + 1);
-    }
-
-    gotoPrevPage()
-    {
-        if (this.currentSystem > 0) this.scrollToPage(this.currentSystem - 1);
-    }
-
+    // Handles zooming in - subtract 10 from scale
     zoomIn()
     {
         if (this.verovioSettings.scale <= 100)
         {
             this.verovioSettings.scale += 10;
-            this.refreshVerovio();
+            this.updateSettings(true);
         }
-        this.updateZoomIcons();
     }
 
+    // Handles zooming out - subtract 10 from scale
     zoomOut()
     {
         if (this.verovioSettings.scale > 10)
         {
             this.verovioSettings.scale -= 10;
-            this.refreshVerovio();
+            this.updateSettings(true);
         }
-        this.updateZoomIcons();
     }
 
     /**
@@ -419,14 +401,6 @@ export class VidaView
     {
         var t = e.target;
         var id = t.parentNode.attributes.id.value;
-        var sysID = t.closest('.system').attributes.id.value;
-
-        for (var idx = 0; idx < this.systemData.length; idx++)
-            if (this.systemData[idx].id == sysID)
-            {
-                this.clickedPage = idx;
-                break;
-            }
 
         this.resetHighlights();
         this.activateHighlight(id);
@@ -492,13 +466,13 @@ export class VidaView
                 }
             };
 
-            this.contactWorker('edit', {action: editorAction, pageIndex: this.clickedPage}, this.renderPage);
+            this.contactWorker('edit', {action: editorAction, pageIndex: this.currentSystem}, this.renderPage);
             if (this.draggingActive) this.removeHighlight(id);
         }
 
         if (this.draggingActive)
         {
-            this.contactWorker('renderPage', {pageIndex: this.clickedPage}, this.renderPage);
+            this.contactWorker('renderPage', {pageIndex: this.currentSystem}, this.renderPage);
             this.draggingActive = false;
             this.dragInfo = {};
         }
