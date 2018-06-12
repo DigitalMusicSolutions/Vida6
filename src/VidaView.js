@@ -13,17 +13,32 @@
  * -iconClasses: extra classes to apply to toolbar buttons
  */
 
-import {Events} from './utils';
+import {VidaController} from './VidaController';
+import {Events, EventManager, iterableDOM} from './utils';
 
 export class VidaView
 {
     constructor(options)
     {
         options = options || {};
-        if (!options.controller || !options.parentElement)
-            return console.error("All VidaView objects must be initialized with both the 'controller' and 'parentElement' parameters.");
 
+        // Root element in which Vida is created
+        if (!options.parentElement || !(options.parentElement instanceof HTMLElement))
+            return console.error("All VidaView objects must be initialized with a 'parentElement' parameter that is a DOM element.");
         this.parentElement = options.parentElement;
+
+        // VidaController object
+        if (!options.controller || !(options.controller instanceof VidaController))
+            return console.error("All VidaView objects must be initialized with a 'controller' parameter that is an instance of the VidaController class.")
+        this.controller = options.controller;
+
+        // One of the little quirks of writing in ES6, bind events
+        this.eventManager = new EventManager({parent: this});
+
+        // Register this view with the controller and cache which viewIndex we are for future messages
+        this.viewIndex = this.controller.register(this);
+
+        // Allow developers to append custom classes to icons (for FontAwesome, etc)
         options.iconClasses = options.iconClasses || {};
         this.iconClasses = {
             nextPage: options.iconClasses.nextPage || '',
@@ -31,12 +46,6 @@ export class VidaView
             zoomIn: options.iconClasses.zoomIn || '',
             zoomOut: options.iconClasses.zoomOut || ''
         };
-
-        this.controller = options.controller;
-        this.viewIndex = this.controller.register(this);
-
-        // One of the little quirks of writing in ES6, bind events
-        this.bindListeners();
 
         // initializes ui underneath the parent element, as well as Verovio communication
         this.initializeLayoutAndWorker();
@@ -56,7 +65,7 @@ export class VidaView
             adjustPageHeight: true,
             noFooter: true,
 
-            // These are all default values and are overridden further down in `VidaView:refreshVerovio`
+            // These are all default values and are overridden further down in `VidaView:refreshVerovio` or as applied
             pageHeight: 2970,
             pageWidth: 2100,
             pageMarginLeft: 50,
@@ -67,9 +76,8 @@ export class VidaView
         };
 
         // "Global" variables
-        this.resizeTimer;
-        this.mei = undefined; // saved in Vida as well as the worker; there are cases where Verovio's interpretation
-        this.verovioContent = undefined; // svg output
+        this.resizeTimer; // Used to prevent per-pixel re-render events when the window is resized
+        this.mei = undefined; // saved in Vida as well as the worker, because Verovio's interpretation isn't always correct
 
         // Vida ensures one system per Verovio page; track the current system/page and total count
         this.currentSystem = 0; // topmost system object within the Vida display
@@ -79,49 +87,32 @@ export class VidaView
         this.draggingActive; // boolean "active"
         this.highlightedCache = [];
         this.dragInfo = {
-
         /*
             "x": position of clicked note
             "initY": initial Y position
             "svgY": scaled initial Y position
             "pixPerPix": conversion between the above two
         */
-
         };
 
+        // If we came in with MEI to render, load it in to Verovio
         if (options.mei) this.refreshVerovio(options.mei);
     }
 
+    // Called to unsubscribe from all events. Probably a good idea to call this if the Vida object is deleted.
     destroy()
     {
-        window.addEventListener('resize', this.boundResize);
-
-        this.ui.svgOverlay.removeEventListener('scroll', this.boundSyncScroll);
-        this.ui.nextPage.removeEventListener('click', this.boundGotoNext);
-        this.ui.prevPage.removeEventListener('click', this.boundGotoPrev);
-        this.ui.zoomIn.removeEventListener('click', this.boundZoomIn);
-        this.ui.zoomOut.removeEventListener('click', this.boundZoomOut);
-
-        this.ui.svgOverlay.removeEventListener('click', this.boundObjectClick);
-        const notes = this.ui.svgOverlay.querySelectorAll('.note');
-        for (var idx = 0; idx < notes.length; idx++)
-        {
-            const note = notes[idx];
-
-            note.removeEventListener('mousedown', this.boundMouseDown);
-            note.removeEventListener('touchstart', this.boundMouseDown);
-        }
+        this.eventManager.unbindAll();
+        this.events.unsubscribeAll();
 
         document.removeEventListener('mousemove', this.boundMouseMove);
         document.removeEventListener('mouseup', this.boundMouseUp);
         document.removeEventListener('touchmove', this.boundMouseMove);
         document.removeEventListener('touchend', this.boundMouseUp);
-
-        this.events.unsubscribeAll();
     }
 
     /**
-     * Init code separated out for cleanliness' sake
+     * This code separated out primarily for cleanliness' sake
      */
     initializeLayoutAndWorker()
     {
@@ -149,7 +140,7 @@ export class VidaView
 
         window.addEventListener('resize', this.boundResize);
 
-        // If this has already been instantiated , undo events
+        // If this has already been instantiated, undo events
         if (this.ui && this.ui.svgOverlay) this.destroy();
 
         // Set up the UI object
@@ -161,33 +152,28 @@ export class VidaView
         this.ui.zoomIn = this.ui.parentElement.querySelector('.vida-zoom-in');
         this.ui.zoomOut = this.ui.parentElement.querySelector('.vida-zoom-out');
 
+        // Document/Window-scoped events
+        this.bindListeners();
+
         // synchronized scrolling between svg overlay and wrapper
-        this.ui.svgOverlay.addEventListener('scroll', this.boundSyncScroll);
+        this.eventManager.bind(this.ui.svgOverlay, 'scroll', this.syncScroll);
+        this.eventManager.bind(this.ui.svgOverlay, 'click', this.objectClickListener);
 
         // control bar events
-        this.ui.nextPage.addEventListener('click', this.boundGotoNext);
-        this.ui.prevPage.addEventListener('click', this.boundGotoPrev);
-        this.ui.zoomIn.addEventListener('click', this.boundZoomIn);
-        this.ui.zoomOut.addEventListener('click', this.boundZoomOut);
+        this.eventManager.bind(this.ui.nextPage, 'click', this.gotoNextSystem);
+        this.eventManager.bind(this.ui.prevPage, 'click', this.gotoPrevSystem);
+        this.eventManager.bind(this.ui.zoomIn, 'click', this.zoomIn);
+        this.eventManager.bind(this.ui.zoomOut, 'click', this.zoomOut);
 
         // simulate a resize event
         this.updateDims();
     }
 
-    // Necessary for how ES6 "this" works
+    // Necessary for how ES6 "this" works inside events
     bindListeners()
     {
-        this.boundSyncScroll = (evt) => this.syncScroll(evt);
-        this.boundGotoNext = (evt) => this.gotoNextSystem(evt);
-        this.boundGotoPrev = (evt) => this.gotoPrevSystem(evt);
-        this.boundZoomIn = (evt) => this.zoomIn(evt);
-        this.boundZoomOut = (evt) => this.zoomOut(evt);
-        this.boundObjectClick = (evt) => this.objectClickListener(evt);
-
-        this.boundMouseDown = (evt) => this.mouseDownListener(evt);
         this.boundMouseMove = (evt) => this.mouseMoveListener(evt);
         this.boundMouseUp = (evt) => this.mouseUpListener(evt);
-
         this.boundResize = (evt) => this.resizeComponents(evt);
     }
 
@@ -199,14 +185,13 @@ export class VidaView
         this.controller.contactWorker(messageType, params, this.viewIndex, callback);
     }
 
-    renderPage(params)
+    displayPage(params)
     {
         const vidaOffset = this.ui.svgWrapper.getBoundingClientRect().top;
         this.ui.svgWrapper.innerHTML = params.svg;
 
         // create the overlay, save the content, make sure highlights are up to date
         if (params.createOverlay) this.createOverlay();
-        this.verovioContent = this.ui.svgWrapper.innerHTML;
         this.reapplyHighlights();
 
         // do not reset this.mei to what Verovio thinks it should be, as that'll cause significant problems
@@ -214,32 +199,42 @@ export class VidaView
         this.events.publish('PageRendered', [this.mei]);
     }
 
+    /**
+     * Serves as a wrapper for the Verovio Toolkit `setOptions` method.
+     * @param {boolean} rerender - if true, triggers a rerender of the current page
+     */
     updateSettings(rerender)
     {
         this.contactWorker('setOptions', {options: this.verovioSettings});
         if (rerender) this.renderCurrentPage();
     };
 
-    // Used to reload Verovio, or to provide new MEI
+    /**
+     * Serves as a wrapper for the Verovio Toolkit `loadData` method.
+     * @param {string} mei - what the MEI should be updated to
+     */
     refreshVerovio(mei)
     {
         if (mei) this.mei = mei;
-        if (!this.mei) return;
+        else return;
 
-        this.ui.svgOverlay.innerHTML = this.ui.svgWrapper.innerHTML = this.verovioContent = '';
+        this.ui.svgOverlay.innerHTML = this.ui.svgWrapper.innerHTML = '';
 
-        // Verovio pageHeight should be the default regardless, but reset the pageWidth to be whatever the effective viewport width is
+        // Reset pageHeight and pageWidth to match the effective scaled viewport width
         this.verovioSettings.pageHeight = 
-            this.ui.svgWrapper.clientHeight // base wrapper width
-            * (100 / this.verovioSettings.scale) // make sure the system takes up the full available width
+            this.ui.svgWrapper.clientHeight // base wrapper height
+            * (100 / this.verovioSettings.scale) // to scale
             - (this.verovioSettings.pageMarginTop + this.verovioSettings.pageMarginBottom); // minus margins
 
         this.verovioSettings.pageWidth = 
             this.ui.svgWrapper.clientWidth // base wrapper width
-            * (100 / this.verovioSettings.scale) // make sure the system takes up the full available width
+            * (100 / this.verovioSettings.scale) // to scale
             - (this.verovioSettings.pageMarginLeft + this.verovioSettings.pageMarginRight); // minus margins
 
+        // Update the settings without a re-render
         this.updateSettings(false);
+
+        // Reload the MEI, what we came here for, and re-render the current page after setting it
         this.contactWorker('loadData', {mei: this.mei + '\n'}, (params) =>
         {
             this.totalSystems = params.pageCount;
@@ -247,43 +242,42 @@ export class VidaView
             this.renderCurrentPage();
         });
     }
-
+    
+    /**
+     * Updates the svgOverlay to match the svgWrapper
+     */
     createOverlay()
     {
         // Copy wrapper HTML to overlay
         this.ui.svgOverlay.innerHTML = this.ui.svgWrapper.innerHTML;
 
         // Make all <g>s and <path>s transparent, hide the text
-        var idx;
-        const gElems = this.ui.svgOverlay.querySelectorAll('g');
-        for (idx = 0; idx < gElems.length; idx++)
+        for (const gElem of this.ui.svgOverlay.querySelectorAll('g'))
         {
-            gElems[idx].style.strokeOpacity = 0.0;
-            gElems[idx].style.fillOpacity = 0.0;
+            gElem.style.strokeOpacity = 0.0;
+            gElem.style.fillOpacity = 0.0;
         }
-        const pathElems = this.ui.svgOverlay.querySelectorAll('path');
-        for (idx = 0; idx < pathElems.length; idx++)
+
+        for (const pathElem of this.ui.svgOverlay.querySelectorAll('path'))
         {
-            pathElems[idx].style.strokeOpacity = 0.0;
-            pathElems[idx].style.fillOpacity = 0.0;
+            pathElem.style.strokeOpacity = 0.0;
+            pathElem.style.fillOpacity = 0.0;
         }
         delete this.ui.svgOverlay.querySelectorAll('text');
 
         // Add event listeners for click
-        this.ui.svgOverlay.removeEventListener('click', this.boundObjectClick);
-        this.ui.svgOverlay.addEventListener('click', this.boundObjectClick);
         const notes = this.ui.svgOverlay.querySelectorAll('.note');
-        for (idx = 0; idx < notes.length; idx++)
+        for (let idx = 0; idx < notes.length; idx++)
         {
             const note = notes[idx];
-
-            note.removeEventListener('mousedown', this.boundMouseDown);
-            note.removeEventListener('touchstart', this.boundMouseDown);
-            note.addEventListener('mousedown', this.boundMouseDown);
-            note.addEventListener('touchstart', this.boundMouseDown);
+            this.eventManager.bind(note, 'mousedown', this.mouseDownListener);
+            this.eventManager.bind(note, 'touchstart', this.mouseDownListener);
         }
     }
 
+    /**
+     * Updates visibility of the page navigation icons
+     */
     updateNavIcons()
     {
         if (this.verovioSettings.noLayout || (this.currentSystem === this.totalSystems - 1)) this.ui.nextPage.style.visibility = 'hidden';
@@ -293,6 +287,9 @@ export class VidaView
         else this.ui.prevPage.style.visibility = 'visible';
     }
 
+    /**
+     * Updates visibility of the zoom icons
+     */
     updateZoomIcons()
     {
         if (this.verovioSettings.scale == 100) this.ui.zoomIn.style.visibility = 'hidden';
@@ -303,7 +300,7 @@ export class VidaView
     }
 
     /**
-     * Navigate to the next page
+     * Navigates to a given system
      */
     goToSystem(pageNumber)
     {
@@ -311,9 +308,12 @@ export class VidaView
         this.renderCurrentPage();
     }
 
+    /**
+     * Renders the current page
+     */
     renderCurrentPage()
     {
-        this.contactWorker('renderPage', {pageIndex: this.currentSystem}, this.renderPage);
+        this.contactWorker('renderPage', {pageIndex: this.currentSystem}, this.displayPage);
     }
 
     // Shortcurt for above with safety for max possible system
@@ -336,12 +336,15 @@ export class VidaView
         // Immediately: resize larger components
         this.updateDims();
 
-        // Set timeout for resizing Verovio once full resize action is complete
+        /** 
+         * Because this gets triggered on a per-pixel basis, reset it and actually trigger the
+         *  rerender once we're pretty sure we're done with the drag.
+         */ 
         clearTimeout(this.resizeTimer);
         const self = this;
         this.resizeTimer = setTimeout(function ()
         {
-            self.refreshVerovio();
+            self.renderCurrentPage();
         }, 200);
     }
 

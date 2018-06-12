@@ -8,7 +8,7 @@ Incoming:
 
 Outgoing:
 -dataLoaded (pageCount)
--returnPage (pageIndex, svg, redoOverlay, mei)
+-returnPage (pageIndex, svg, createOverlay, mei)
 -mei (mei)
 */
 
