@@ -1,10 +1,10 @@
 # Vida.js
 
-Vida is a JavaScript library built off the [Verovio](http://www.verovio.org/index.xhtml) music notation engraving library. Vida optimizes Verovio for larger scores, isolating the engraving process to a WebWorker to prevent UI freezing, and automatically paginates the score.
+Vida is a JavaScript library built off the [Verovio](http://www.verovio.org/index.xhtml) music notation engraving library. Vida optimizes Verovio for larger scores, isolating the engraving process to a WebWorker to prevent UI freezing, and controls pagination.
 
 ## ES6 Usage
 
-The `verovioWorker.js`, `vida.js`, and `vida.css` files comprise Vida.js. All three must be accessible for a Vida instance to render properly. 
+The `vida.js` and `vida.css` files serve as entry points to Vida.js. A copy of Verovio will be installed via `npm install`. The following code is a basic use of Vida:
 
 ```
 import {VidaView, VidaController} from './vida/vida.js';
@@ -21,8 +21,6 @@ const vidaView = new VidaView({
 
 vidaView.refreshVerovio(mei);
 ```
-
-Use should be as simple as the code above. This repository does not come with a copy of Verovio; please download that from the site linked above.
 
 Full documentation on all supported methods will come soon.
 

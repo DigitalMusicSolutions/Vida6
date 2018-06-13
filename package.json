@@ -1,6 +1,6 @@
 {
   "name": "vida",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Verovio Image Display Assistant",
   "main": "gulpfile.js",
   "scripts": {
