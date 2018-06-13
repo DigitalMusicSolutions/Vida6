@@ -52,9 +52,6 @@ export class VidaView
 
         // Initialize the events system and alias the functions
         this.events = new Events();
-        this.publish = this.events.publish;
-        this.subscribe = this.events.subscribe;
-        this.unsubscribe = this.events.unsubscribe;
 
         this.verovioSettings = {
             // Formatting for line breaks and identifying that we're working with MEI
@@ -196,7 +193,7 @@ export class VidaView
 
         // do not reset this.mei to what Verovio thinks it should be, as that'll cause significant problems
         this.updateNavIcons();
-        this.events.publish('PageRendered', [this.mei]);
+        this.events.publish('PageRendered', [this.currentSystem]);
     }
 
     /**
@@ -396,7 +393,7 @@ export class VidaView
     objectClickListener(e)
     {
         var closestMeasure = e.target.closest('.measure');
-        if (closestMeasure) this.publish('ObjectClicked', [e.target, closestMeasure]);
+        if (closestMeasure) this.events.publish('ObjectClicked', [e.target, closestMeasure]);
         e.stopPropagation();
     }
 
@@ -469,13 +466,13 @@ export class VidaView
                 }
             };
 
-            this.contactWorker('edit', {action: editorAction, pageIndex: this.currentSystem}, this.renderPage);
+            this.contactWorker('edit', {action: editorAction, pageIndex: this.currentSystem}, this.displayPage);
             if (this.draggingActive) this.removeHighlight(id);
         }
 
         if (this.draggingActive)
         {
-            this.contactWorker('renderPage', {pageIndex: this.currentSystem}, this.renderPage);
+            this.contactWorker('renderPage', {pageIndex: this.currentSystem}, this.displayPage);
             this.draggingActive = false;
             this.dragInfo = {};
         }

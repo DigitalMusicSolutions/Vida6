@@ -73,6 +73,7 @@ self.addEventListener('message', function (event) {
         case "edit":
             try {
                 var res = vrvToolkit.edit(params.action);
+                vrvToolkit.redoPagePitchPosLayout();
                 renderPage(params.pageIndex, ticket);
             }
             catch (e) {

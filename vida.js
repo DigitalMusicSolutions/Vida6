@@ -4,5 +4,5 @@
  * Primary import file. 
  */
 
-export {VidaView} from './src/VidaView';
-export {VidaController} from './src/VidaController';
+export {VidaView} from './src/js/VidaView';
+export {VidaController} from './src/js/VidaController';

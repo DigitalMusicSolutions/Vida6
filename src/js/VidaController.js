@@ -5,7 +5,7 @@
  * Authors: Andrew Horwitz
  */
 
-import * as VerovioWorker from 'worker-loader?name=./VerovioWorker-compiled.js&publicPath=/js/!./VerovioWorker.js';
+import * as VerovioWorker from 'worker-loader?name=./VerovioWorker.js&publicPath=/js/!./VerovioWorker.js';
 
 export class VidaController
 {
@@ -14,6 +14,7 @@ export class VidaController
         // Keeps track of callback functions for worker calls
         this.ticketID = 0;
         this.tickets = {};
+        this.noCallback = 'no-callback'; // used when we know no callback is present for a ticket
 
         // Keeps track of the worker reserved for each view
         this.viewWorkers = [];
@@ -35,16 +36,18 @@ export class VidaController
             if (eventType === 'error')
             {
                 console.log('Error message from Verovio:', params);
-                if (ticket) delete this.tickets[ticket];
             }
+
+            else if (this.tickets[ticket] === this.noCallback) {}
 
             else if (this.tickets[ticket])
             {
                 this.tickets[ticket].call(viewObj, params);
-                delete this.tickets[ticket];
             }
 
             else console.log('Unexpected worker case:', event);
+
+            if (ticket) delete this.tickets[ticket];
         };
 
         return workerIndex;
@@ -52,8 +55,10 @@ export class VidaController
 
     contactWorker(messageType, params, viewIndex, callback)
     {
-        // array passed is [messageType, ticketNumber, dataObject]
-        this.tickets[this.ticketID] = callback;
+        if (!(viewIndex in this.viewWorkers))
+            return console.error("That VidaView has not been registered yet!");
+
+        this.tickets[this.ticketID] = callback || this.noCallback;
         this.viewWorkers[viewIndex].postMessage([messageType, this.ticketID, params]);
         this.ticketID++;
     }

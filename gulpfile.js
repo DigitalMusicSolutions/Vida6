@@ -20,7 +20,7 @@ const livereloadMiddleware = require('connect-livereload');
 const livereload_port = 35728;
 const static_port = 8066;
 const static_location = "example";
-const source_location = "./src/";
+const source_location = "src";
 const static_app = express();
 let static_server;
 let compiler;
@@ -43,21 +43,19 @@ gulp.task('develop', function()
 {
     // CSS compilation
     gulp.start(['style:vida', 'style:app']);
-    gulp.watch(static_location + '/css/vida.scss', ['style:vida']); // CSS for vida itself
+    gulp.watch(source_location + '/css/vida.scss', ['style:vida']); // CSS for vida itself
     gulp.watch(static_location + '/css/app.scss', ['style:app']); // CSS for this demo app
 
     // JS compilation/linting
     gulp.start(['js:develop']);
     gulp.watch([
-        source_location + '**/*.js'
+        source_location + '/**/*.js'
     ], ['js:develop']);
 
     // Set up livereload to listen and change when a compiled file (or the index HTML file) changes
     $.livereload.listen({port: livereload_port});
     gulp.watch([
-        static_location + '/js/**/*.js',
-        static_location + '/index.html',
-        static_location + '/css/*.css'
+        static_location + '/**/*'
     ], $.livereload.changed);
 
     // Create a simple express static server
@@ -72,11 +70,11 @@ gulp.task('develop', function()
 // CSS compilation tasks
 gulp.task('style:vida', function()
 {
-    buildCSS('vida');
+    buildCSS('vida', './');
 });
 gulp.task('style:app', function()
 {
-    buildCSS('app');
+    buildCSS('app', 'example/css/');
 });
 
 // JS compilation task
@@ -102,14 +100,14 @@ gulp.task('js:lint', function()
 });
 
 // Generalized function for performing the same compilation process on any CSS file
-var buildCSS = function(which)
+var buildCSS = function(which, dest)
 {
     return gulp.src(static_location + "/css/" + which + ".scss")
         .pipe(sass().on('error', sass.logError))
         .pipe(autoprefixer({
             browsers: browserSupport
         }))
-        .pipe(gulp.dest(static_location + "/css/"), {overwrite: true});
+        .pipe(gulp.dest(dest), {overwrite: true});
 };
 
 // Generalized function for performing the same compilation process on any JS file
