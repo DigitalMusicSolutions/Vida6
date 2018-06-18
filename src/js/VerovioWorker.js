@@ -28,14 +28,14 @@ function contactCaller(message, ticket, params)
 }
 
 // Page index comes in 0-indexed and should be returned 0-indexed, but Verovio requires 1-indexed
-function renderPage(index, ticket)
+function renderPage(index, ticket, forceOverlay)
 {
     try {
         var rendered = vrvToolkit.renderToSVG(index + 1);
         contactCaller("returnPage", ticket, {
             'pageIndex': index, 
             'svg': rendered, 
-            'createOverlay': true, 
+            'createOverlay': typeof forceOverlay === 'undefined' ? true : forceOverlay, 
             'mei': vrvToolkit.getMEI()
         });
     }
@@ -74,7 +74,7 @@ self.addEventListener('message', function (event) {
             try {
                 var res = vrvToolkit.edit(params.action);
                 vrvToolkit.redoPagePitchPosLayout();
-                renderPage(params.pageIndex, ticket);
+                renderPage(params.pageIndex, ticket, false);
             }
             catch (e) {
                 contactCaller('error', ticket, {'error': "Edit failed:" + e});

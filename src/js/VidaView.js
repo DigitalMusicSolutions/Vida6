@@ -262,7 +262,7 @@ export class VidaView
         }
         delete this.ui.svgOverlay.querySelectorAll('text');
 
-        // Add event listeners for click
+        // Add event listeners for click on notes
         const notes = this.ui.svgOverlay.querySelectorAll('.note');
         for (let idx = 0; idx < notes.length; idx++)
         {
@@ -399,21 +399,22 @@ export class VidaView
 
     mouseDownListener(e)
     {
-        var t = e.target;
-        var id = t.parentNode.attributes.id.value;
+        const notehead = e.target;
+        if (!notehead.closest(".note")) return; // this should never happen, but as a safety
+        const id = notehead.closest(".note").attributes.id.value;
 
         this.resetHighlights();
         this.activateHighlight(id);
 
-        var viewBoxSVG = t.closest('svg');
-        var parentSVG = viewBoxSVG.parentNode.closest('svg');
-        var actualSizeArr = viewBoxSVG.getAttribute('viewBox').split(' ');
-        var actualHeight = parseInt(actualSizeArr[3]);
-        var svgHeight = parseInt(parentSVG.getAttribute('height'));
-        var pixPerPix = (actualHeight / svgHeight);
+        const viewBoxSVG = notehead.closest('svg');
+        const parentSVG = viewBoxSVG.parentNode.closest('svg');
+        const actualSizeArr = viewBoxSVG.getAttribute('viewBox').split(' ');
+        const actualHeight = parseInt(actualSizeArr[3]);
+        const svgHeight = parseInt(parentSVG.getAttribute('height'));
+        const pixPerPix = (actualHeight / svgHeight);
 
-        this.dragInfo['x'] = t.getAttribute('x') >> 0;
-        this.dragInfo['svgY'] = t.getAttribute('y') >> 0;
+        this.dragInfo['x'] = parseInt(notehead.getAttribute('x'));
+        this.dragInfo['svgY'] = parseInt(notehead.getAttribute('y'));
         this.dragInfo['initY'] = e.pageY;
         this.dragInfo['pixPerPix'] = pixPerPix;
 
@@ -422,7 +423,6 @@ export class VidaView
         document.addEventListener('mouseup', this.boundMouseUp);
         document.addEventListener('touchmove', this.boundMouseMove);
         document.addEventListener('touchend', this.boundMouseUp);
-        this.draggingActive = false;
     };
 
     mouseMoveListener(e)
@@ -431,7 +431,9 @@ export class VidaView
         for (var idx = 0; idx < this.highlightedCache.length; idx++)
             this.ui.svgOverlay.querySelector('#' + this.highlightedCache[idx]).setAttribute('transform', 'translate(0, ' + scaledY + ')');
 
-        this.draggingActive = true;
+        this.draggingActive = true; // we know we're dragging if this listener triggers
+        this.commitChanges(e.pageY);
+
         e.preventDefault();
     };
 
@@ -442,8 +444,11 @@ export class VidaView
         document.removeEventListener('touchmove', this.boundMouseMove);
         document.removeEventListener('touchend', this.boundMouseUp);
 
-        if (!this.draggingActive) return;
-        this.commitChanges(e.pageY);
+        if (this.draggingActive === true)
+        {
+            this.draggingActive = false;
+            this.renderCurrentPage(); // triggers a rerender with createOverlay
+        }
     }
 
     commitChanges(finalY)
@@ -467,45 +472,43 @@ export class VidaView
             };
 
             this.contactWorker('edit', {action: editorAction, pageIndex: this.currentSystem}, this.displayPage);
-            if (this.draggingActive) this.removeHighlight(id);
-        }
-
-        if (this.draggingActive)
-        {
-            this.contactWorker('renderPage', {pageIndex: this.currentSystem}, this.displayPage);
-            this.draggingActive = false;
-            this.dragInfo = {};
         }
     };
 
     activateHighlight(id)
     {
-        if (this.highlightedCache.indexOf(id) > -1) return;
+        if (this.highlightedCache.indexOf(id) === -1)
+        {
+            this.highlightedCache.push(id);
+        }
 
-        this.highlightedCache.push(id);
         this.reapplyHighlights();
-
-        // Hide the svgWrapper copy of the note
-        this.ui.svgWrapper.querySelector('#' + id).setAttribute('style', 'fill-opacity: 0.0; stroke-opacity: 0.0;');
     }
 
     reapplyHighlights()
     {
         for (var idx = 0; idx < this.highlightedCache.length; idx++)
         {
-            var targetObj = this.ui.svgOverlay.querySelector('#' + this.highlightedCache[idx]);
-            targetObj.setAttribute('style', 'fill: #ff0000; stroke: #ff00000; fill-opacity: 1.0; stroke-opacity: 1.0;');
+            // Set the wrapper instance to be red and visible
+            const id = this.highlightedCache[idx];
+            const wrapperTarget = this.ui.svgWrapper.querySelector('#' + id);
+            wrapperTarget.style.fill = "#ff0000";
+            wrapperTarget.style.stroke = "#ff0000";
         }
     }
 
     removeHighlight(id)
     {
-        var idx = this.highlightedCache.indexOf(id);
+        const idx = this.highlightedCache.indexOf(id);
         if (idx === -1) return;
 
-        var removedID = this.highlightedCache.splice(idx, 1);
-        this.ui.svgWrapper.querySelector('#' + id).setAttribute('style', 'fill-opacity: 1.0; stroke-opacity: 1.0;');
-        this.ui.svgOverlay.querySelector('#' + removedID).setAttribute('style', 'fill: #000000; stroke: #0000000; fill-opacity: 0.0; stroke-opacity: 0.0;');
+        // Get the ID
+        const removedID = this.highlightedCache.splice(idx, 1);
+        const wrapperTarget = this.ui.svgWrapper.querySelector('#' + id);
+
+        // Set it back to black
+        wrapperTarget.style.fill = "#000000";
+        wrapperTarget.style.stroke = "#000000";
     }
 
     resetHighlights()
