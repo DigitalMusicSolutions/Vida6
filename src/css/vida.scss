@@ -1,3 +1,5 @@
+$background-grey: #EEE;
+
 .vida-wrapper {
     width: 100%;
     height: 100%;
@@ -18,6 +20,24 @@
         overflow: auto;
         width: 100%;
         height: 100%;
+
+        .vida-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+
+            &:before {
+                display: block;
+                font-weight: bold;
+                font-family: sans-serif;
+                background: $background-grey;
+                border-radius: 5px;
+                padding: 1em;
+                content: 'Vida is loading...'
+            }
+        }
     }
 
     svg {
@@ -25,17 +45,17 @@
         margin: 0 auto;
     }
 
+    $toolbar-button-padding: 1.25em;
     .vida-toolbar {
         width: 100%;
 
         display: flex;
         justify-content: space-between;
-        background: #DDD;
+        background: $background-grey;
 
         padding: 0 1em;
         box-sizing: border-box;
-        min-height: 2em;
-        height: 2em;
+        height: calc(#{$toolbar-button-padding} * 2);
 
         .vida-toolbar-block {
             display: inline-block;
@@ -48,9 +68,8 @@
             cursor: pointer;
 
             height: 100%;
-            min-width: 2em;
+            width: calc(#{$toolbar-button-padding} * 2);
             box-sizing: border-box;
-            padding: 0.2em;
 
             background-origin: content-box;
             background-repeat: no-repeat;

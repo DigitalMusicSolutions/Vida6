@@ -131,7 +131,7 @@ export class VidaView
                     '<span class="vida-button vida-zoom-out vida-zoom-control ' + this.iconClasses.zoomOut + '"></span>' +
                 '</div>' +
             '</div>' +
-            '<div class="vida-svg-wrapper vida-svg-object" style="z-index: 1; position:absolute;">Verovio is loading...</div>' +
+            '<div class="vida-svg-wrapper vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
             '<div class="vida-svg-overlay vida-svg-object" style="z-index: 1; position:absolute;"></div>' +
         '</div>';
 
@@ -215,7 +215,7 @@ export class VidaView
         if (mei) this.mei = mei;
         else return;
 
-        this.ui.svgOverlay.innerHTML = this.ui.svgWrapper.innerHTML = '';
+        this.ui.svgOverlay.innerHTML = this.ui.svgWrapper.innerHTML = `<div class='vida-loading'></div>`;
 
         // Reset pageHeight and pageWidth to match the effective scaled viewport width
         this.verovioSettings.pageHeight = 

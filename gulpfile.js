@@ -70,11 +70,11 @@ gulp.task('develop', function()
 // CSS compilation tasks
 gulp.task('style:vida', function()
 {
-    buildCSS('vida', './');
+    buildCSS(source_location + '/css/vida.scss', './');
 });
 gulp.task('style:app', function()
 {
-    buildCSS('app', 'example/css/');
+    buildCSS(static_location + '/css/app.scss', 'example/css/');
 });
 
 // JS compilation task
@@ -100,9 +100,9 @@ gulp.task('js:lint', function()
 });
 
 // Generalized function for performing the same compilation process on any CSS file
-var buildCSS = function(which, dest)
+var buildCSS = function(source, dest)
 {
-    return gulp.src(static_location + "/css/" + which + ".scss")
+    return gulp.src(source)
         .pipe(sass().on('error', sass.logError))
         .pipe(autoprefixer({
             browsers: browserSupport
