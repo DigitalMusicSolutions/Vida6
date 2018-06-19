@@ -310,6 +310,8 @@ export class VidaView
      */
     renderCurrentPage()
     {
+        this.contactWorker('redoLayout', {});
+        // We should check that the highlighted id is still on the same page
         this.contactWorker('renderPage', {pageIndex: this.currentSystem}, this.displayPage);
     }
 
