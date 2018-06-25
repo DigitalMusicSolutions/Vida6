@@ -66,6 +66,10 @@ self.addEventListener('message', function (event) {
             vrvToolkit.setOptions(params.options);
             break;
 
+        case "redoLayout":
+           vrvToolkit.redoLayout();
+           break;
+
         case "renderPage":
            renderPage(params.pageIndex, ticket);
            break;
