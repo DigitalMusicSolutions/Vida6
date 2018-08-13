@@ -12,6 +12,7 @@ const browserSupport = [
     'bb >= 10'
 ];
 
+// Actual vida.js compilation
 module.exports = [{
     mode: 'production',
     entry: {
@@ -24,7 +25,7 @@ module.exports = [{
         path: path.resolve(__dirname, 'dist/'),
         filename: '[name].min.js',
         library: 'vida',
-        libraryTarget: 'var'
+        libraryTarget: 'commonjs2'
     },
     node: {
         fs: 'empty'
@@ -48,14 +49,16 @@ module.exports = [{
                         }]]
                     }
                 }
-            },
-            // use worker-loader for VerovioWorker.js
-            {
-                test: /\.VerovioWorker\.js$/,
-                use: { loader: 'worker-loader' }
             }
+            // use worker-loader for VerovioWorker.js
+            // {
+            //     test: /\.VerovioWorker\.js$/,
+            //     use: { loader: 'worker-loader' }
+            // }
         ]
     }
+
+// Separate WebWorker compilation
 }, {
     mode: 'production',
     target: 'webworker',
@@ -64,6 +67,15 @@ module.exports = [{
     },
     output: {
         path: path.resolve(__dirname, 'dist/'),
+        filename: '[name].js'
+    }
+}, {
+    mode: 'production',
+    entry: {
+        'example': './example/example-es6.js'
+    },
+    output: {
+        path: path.resolve(__dirname, 'example/'),
         filename: '[name].js'
     }
 }];
