@@ -1,13 +1,9 @@
-'use babel';
-
 /**
  * Vida6 - An ES6-compatible controller for Verovio
  *
  * VidaController: The primary interface between the UI and the Verovio object
  * Authors: Andrew Horwitz
  */
-
-import * as VerovioWorker from 'worker-loader?name=./VerovioWorker.js&publicPath=/js/!./VerovioWorker.js';
 
 export class VidaController
 {
@@ -25,7 +21,7 @@ export class VidaController
 
     register(viewObj)
     {
-        const newWorker = new VerovioWorker();
+        const newWorker = new Worker("./js/VerovioWorker.js");
         const workerIndex = this.viewWorkers.push(newWorker) - 1; // push returns length; convert 1-indexed length to 0-indexed value
         this.views[workerIndex] = viewObj;
 

@@ -46,12 +46,6 @@ gulp.task('develop', function()
     gulp.watch(source_location + '/css/vida.scss', ['style:vida']); // CSS for vida itself
     gulp.watch(static_location + '/css/app.scss', ['style:app']); // CSS for this demo app
 
-    // JS compilation/linting
-    gulp.start(['js:develop']);
-    gulp.watch([
-        source_location + '/**/*.js'
-    ], ['js:develop']);
-
     // Set up livereload to listen and change when a compiled file (or the index HTML file) changes
     $.livereload.listen({port: livereload_port});
     gulp.watch([
@@ -77,22 +71,6 @@ gulp.task('style:app', function()
     buildCSS(static_location + '/css/app.scss', 'example/css/');
 });
 
-// JS compilation task
-gulp.task('js:develop', function (callback)
-{
-    if (!compiler)
-    {
-        console.log('Creating webpack compiler.');
-        compiler = webpack(makeWebpackConfig());
-    }
-
-    compiler.run(function (err, stats)
-    {
-        webpackDiag(err, stats);
-        callback();
-    });
-});
-
 // JS linting tasks; pass in `--fix` to trigger auto-fix
 gulp.task('js:lint', function()
 {
@@ -108,70 +86,6 @@ var buildCSS = function(source, dest)
             browsers: browserSupport
         }))
         .pipe(gulp.dest(dest), {overwrite: true});
-};
-
-// Generalized function for performing the same compilation process on any JS file
-function makeWebpackConfig(production)
-{   
-    var config = {
-        mode: 'development',
-        entry: {
-            vida: './vida.js'
-        },
-        resolve: {
-            extensions: ['.js']
-        },
-        output: {
-            path: path.resolve(__dirname, 'dist/'),
-            filename: '[name].min.js',
-            library: 'vida',
-            // libraryExport: ['VidaController', 'VidaView'],
-            libraryTarget: 'commonjs2'
-        },
-        node: {
-            fs: 'empty'
-        }
-    };
-
-    // As of right now, unused
-    if (production)
-    {
-        config.mode = 'production'; // Turn on a bunch of code optimizations/minification stuff
-        config.watch = false; // Prevent live changes on production
-        config.module = { // Babel transpilation for certain browser targets
-            rules: [
-                {
-                    exclude: /(node_modules)/,
-                    use: {
-                        loader: 'babel-loader',
-                        options: {
-                            presets: [['env', {
-                                targets: {
-                                    browsers: browserSupport
-                                },
-                                useBuiltIns: true
-                            }]]
-                        }
-                    }
-                }
-            ]
-        };
-    }
-
-    return config;
-};
-
-// Formats errors from Webpack
-function webpackDiag(err, stats)
-{
-    if (err)
-        return console.error('Build error:', err);
-
-    if (stats.compilation.errors && (stats.compilation.errors.length > 0))
-        return console.error('Compilation error:', stats.compilation.errors);
-
-    if (stats.compilation.warnings && (stats.compilation.warnings.length > 0))
-        return console.error('Compilation warnings:', stats.compilation.warnings);
 };
 
 // Gulp "middleware" - if the file was fixed, returns true to allow gulpIf to overwrite the file

@@ -1,4 +1,3 @@
-'use babel';
 /*
 Incoming:
 -setVerovio (verovioLocation)
@@ -18,10 +17,10 @@ Outgoing:
  * - Make a separate webpack chunk so that loading parent files doesn't take forever
  * - Use RequireJS import syntax because that's what Webpack recommends
  */
-let vrvToolkit;
-import(/* webpackChunkName: "verovio-dev" */ 'verovio-dev').then(verovio => {
-    vrvToolkit = verovio.toolkit();
-});
+
+importScripts("https://www.verovio.org/javascript/develop/verovio-toolkit.js");
+
+let vrvToolkit = new verovio.toolkit();
 
 function contactCaller(message, ticket, params)
 {
@@ -64,7 +63,7 @@ self.addEventListener('message', function (event) {
             break;
 
         case "setOptions":
-            vrvToolkit.setOptions(params.options);
+            vrvToolkit.setOptions(JSON.stringify(params.options));
             break;
 
         case "redoLayout":

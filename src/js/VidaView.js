@@ -1,5 +1,3 @@
-'use babel';
-
 /**
  * Vida6 - An ES6-compatible controller for Verovio
  *
