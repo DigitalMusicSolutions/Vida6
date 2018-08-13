@@ -1,0 +1,1 @@
+dist/vida.min.js

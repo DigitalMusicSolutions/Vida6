@@ -1,3 +1,4 @@
+'use babel';
 /*
 Incoming:
 -setVerovio (verovioLocation)

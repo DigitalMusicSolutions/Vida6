@@ -125,8 +125,8 @@ function makeWebpackConfig(production)
             path: path.resolve(__dirname, 'dist/'),
             filename: '[name].min.js',
             library: 'vida',
-            libraryTarget: 'var',
-            globalObject: 'this'
+            // libraryExport: ['VidaController', 'VidaView'],
+            libraryTarget: 'commonjs2'
         },
         node: {
             fs: 'empty'
