@@ -1,6 +1,5 @@
 index.js
 node_modules
-dist/
-example/css/app.css
-example/css/vida.css
-example/example.js
+build/VerovioWorker.js
+build/vida.min.js
+build/example.js

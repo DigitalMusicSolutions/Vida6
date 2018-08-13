@@ -1,1 +1,1 @@
-dist/vida.min.js
+build/vida.min.js

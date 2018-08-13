@@ -1,4 +1,4 @@
-import {VidaController, VidaView} from "./js/vida.min.js";
+import {VidaController, VidaView} from "../vida.js";
 
 // Create a single controller pointing to the included copy of Verovio and the worker
 const vidaController = new VidaController();
