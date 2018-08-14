@@ -12,46 +12,22 @@ const browserSupport = [
   'bb >= 10'
 ];
 
-// Actual vida.js compilation
+// Build for testing in example directory
 module.exports = [{
   devServer: {
     contentBase: path.join(__dirname, 'build/')
   },
-  mode: 'production',
+  mode: 'development',
   entry: {
-    vida: './src/js/vida.js'
-  },
-  resolve: {
-    extensions: ['.js']
+    'example': './build/example-es6.js'
   },
   output: {
     path: path.resolve(__dirname, 'build/'),
-    filename: '[name].min.js',
-    library: 'vida',
-    libraryTarget: 'commonjs2'
-  },
-  node: {
-    fs: 'empty'
+    filename: '[name].js'
   },
   module: {
     rules: [
-      // Babel transpilation for certain browser targets
       {
-        exclude: [
-          /(node_modules)/
-        ],
-        use: {
-          loader: 'babel-loader',
-          options: {
-            presets: [['env', {
-              targets: {
-                browsers: browserSupport
-              },
-              useBuiltIns: true
-            }]]
-          }
-        }
-      }, {
         test: /\.scss$/,
         use: [
           "style-loader", // creates style nodes from JS strings
@@ -73,7 +49,7 @@ module.exports = [{
 
 // Separate WebWorker compilation for VerovioWorker file
 }, {
-  mode: 'production',
+  mode: 'development',
   target: 'webworker',
   entry: {
     'VerovioWorker': './src/js/VerovioWorker.js'

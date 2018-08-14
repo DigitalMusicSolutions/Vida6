@@ -1,5 +1,8 @@
 index.js
+VerovioWorker.js
+
 node_modules
+
 build/VerovioWorker.js
 build/vida.min.js
 build/example.js

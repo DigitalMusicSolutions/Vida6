@@ -21,7 +21,7 @@ export class VidaController
 
     register(viewObj)
     {
-        const newWorker = new Worker("./js/VerovioWorker.js");
+        const newWorker = new Worker("./VerovioWorker.js");
         const workerIndex = this.viewWorkers.push(newWorker) - 1; // push returns length; convert 1-indexed length to 0-indexed value
         this.views[workerIndex] = viewObj;
 
