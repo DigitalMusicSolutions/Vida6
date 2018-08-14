@@ -1,0 +1,1 @@
+build/VerovioWorker.js
