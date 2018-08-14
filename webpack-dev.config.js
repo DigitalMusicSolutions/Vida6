@@ -46,16 +46,4 @@ module.exports = [{
       }
     ]
   }
-
-// Separate WebWorker compilation for VerovioWorker file
-}, {
-  mode: 'development',
-  target: 'webworker',
-  entry: {
-    'VerovioWorker': path.resolve(__dirname, './src/js/VerovioWorker.js')
-  },
-  output: {
-    path: path.resolve(__dirname, './build/'),
-    filename: '[name].js'
-  }
 }];

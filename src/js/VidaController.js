@@ -5,6 +5,8 @@
  * Authors: Andrew Horwitz
  */
 
+import VerovioWorker from 'worker-loader!./VerovioWorker.js';
+
 export class VidaController
 {
     constructor(options)
@@ -21,7 +23,7 @@ export class VidaController
 
     register(viewObj)
     {
-        const newWorker = new Worker("./VerovioWorker.js");
+        const newWorker = new VerovioWorker();
         const workerIndex = this.viewWorkers.push(newWorker) - 1; // push returns length; convert 1-indexed length to 0-indexed value
         this.views[workerIndex] = viewObj;
 
