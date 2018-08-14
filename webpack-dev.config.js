@@ -15,11 +15,11 @@ const browserSupport = [
 // Build for testing in example directory
 module.exports = [{
   devServer: {
-    contentBase: path.join(__dirname, 'build/')
+    contentBase: path.resolve(__dirname, 'build/')
   },
   mode: 'development',
   entry: {
-    'example': './build/example-es6.js'
+    'example': path.resolve(__dirname, './build/example-es6.js')
   },
   output: {
     path: path.resolve(__dirname, 'build/'),
@@ -52,10 +52,10 @@ module.exports = [{
   mode: 'development',
   target: 'webworker',
   entry: {
-    'VerovioWorker': './src/js/VerovioWorker.js'
+    'VerovioWorker': path.resolve(__dirname, './src/js/VerovioWorker.js')
   },
   output: {
-    path: path.resolve(__dirname, 'build/'),
+    path: path.resolve(__dirname, './build/'),
     filename: '[name].js'
   }
 }];

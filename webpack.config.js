@@ -15,7 +15,7 @@ const browserSupport = [
 // Actual vida.js compilation
 module.exports = [{
   devServer: {
-    contentBase: path.join(__dirname, 'build/')
+    contentBase: path.resolve(__dirname, 'build/')
   },
   mode: 'production',
   entry: {
@@ -25,7 +25,7 @@ module.exports = [{
     extensions: ['.js']
   },
   output: {
-    path: path.resolve(__dirname, 'build/'),
+    path: path.resolve(__dirname, './build/'),
     filename: '[name].min.js',
     library: 'vida',
     libraryTarget: 'commonjs2'
@@ -79,7 +79,7 @@ module.exports = [{
     'VerovioWorker': path.resolve(__dirname, './src/js/VerovioWorker.js')
   },
   output: {
-    path: path.resolve(__dirname, 'build/'),
+    path: path.resolve(__dirname, './build/'),
     filename: '[name].js'
   }
 }];
