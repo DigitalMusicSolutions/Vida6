@@ -19,7 +19,7 @@ module.exports = [{
   },
   mode: 'production',
   entry: {
-    vida: './src/js/vida.js'
+    vida: path.resolve(__dirname, './src/js/vida.js')
   },
   resolve: {
     extensions: ['.js']
@@ -76,7 +76,7 @@ module.exports = [{
   mode: 'production',
   target: 'webworker',
   entry: {
-    'VerovioWorker': './src/js/VerovioWorker.js'
+    'VerovioWorker': path.resolve(__dirname, './src/js/VerovioWorker.js')
   },
   output: {
     path: path.resolve(__dirname, 'build/'),
