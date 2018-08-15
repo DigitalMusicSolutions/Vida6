@@ -63,7 +63,7 @@ self.addEventListener('message', function (event) {
             break;
 
         case "setOptions":
-            vrvToolkit.setOptions(JSON.stringify(params.options));
+            vrvToolkit.setOptions(params.options);
             break;
 
         case "redoLayout":
