@@ -11,7 +11,7 @@ Vida is currently not supported in vanilla ES5. It compiles down to a CommonJS s
 ```
 import {VidaController, VidaView} from "./Vida6";
 
-const vidaController = new vida.VidaController();
+const vidaController = new VidaController();
 ```
 
 Full documentation on all supported methods will come soon.
@@ -22,7 +22,6 @@ Full documentation on all supported methods will come soon.
 vida6 contains a Gulp-managed development setup (in the `example` folder) that will automatically compile the above files. Running the following commands from this root directory should get you up and running:
 
 ```
-npm install # install all necessary build tools
+npm install # install all necessary build tools and compile JS
 npm run dev # starts webpack-dev-server
-npm run dev-build # to test webpack build config
 ```
