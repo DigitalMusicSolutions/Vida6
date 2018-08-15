@@ -5,7 +5,7 @@
  * Authors: Andrew Horwitz
  */
 
-import VerovioWorker from 'worker-loader!./VerovioWorker.js';
+import VerovioWorker from 'worker-loader?inline=true!./VerovioWorker.js';
 
 export class VidaController
 {

@@ -22,7 +22,7 @@ module.exports = [{
     vida: path.resolve(__dirname, './src/js/vida.js')
   },
   resolve: {
-    extensions: ['.js']
+    extensions: ['.js', '.scss']
   },
   output: {
     path: path.resolve(__dirname, './build/'),

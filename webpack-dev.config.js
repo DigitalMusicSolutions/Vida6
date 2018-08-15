@@ -1,17 +1,5 @@
 const path = require('path');
 
-const browserSupport = [
-  'ie >= 11',
-  'ie_mob >= 11',
-  'ff >= 30',
-  'chrome >= 21',
-  'safari >= 8',
-  'opera >= 23',
-  'ios >= 8',
-  'android >= 4.4',
-  'bb >= 10'
-];
-
 // Build for testing in example directory
 module.exports = [{
   devServer: {
@@ -32,16 +20,7 @@ module.exports = [{
         use: [
           "style-loader", // creates style nodes from JS strings
           "css-loader", // translates CSS into CommonJS
-          "sass-loader", // compiles Sass to CSS, using Node Sass by default
-          {
-            loader: 'postcss-loader',
-            options: {
-              ident: 'postcss',
-              plugins: [
-                require('autoprefixer')({browsers: browserSupport})
-              ]
-            }
-          }
+          "sass-loader" // compiles Sass to CSS, using Node Sass by default
         ]
       }
     ]

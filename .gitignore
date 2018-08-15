@@ -1,5 +1,4 @@
 /node_modules
 
-/build/VerovioWorker.js
-/build/vida.min.js
-/build/example.js
+/build/*.js
+!/build/example-es6.js
