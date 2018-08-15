@@ -12,12 +12,9 @@ const browserSupport = [
   'bb >= 10'
 ];
 
-// Actual vida.js compilation
 module.exports = [{
-  devServer: {
-    contentBase: path.resolve(__dirname, 'build/')
-  },
-  mode: 'production',
+  stats: 'errors-only', // Suppress output
+  mode: 'production', // Optimize stuff
   entry: {
     vida: path.resolve(__dirname, './src/js/vida.js')
   },

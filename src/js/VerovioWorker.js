@@ -67,12 +67,12 @@ self.addEventListener('message', function (event) {
             break;
 
         case "redoLayout":
-           vrvToolkit.redoLayout();
-           break;
+            vrvToolkit.redoLayout();
+            break;
 
         case "renderPage":
-           renderPage(params.pageIndex, ticket);
-           break;
+            renderPage(params.pageIndex, ticket);
+            break;
 
         case "edit":
             try {
