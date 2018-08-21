@@ -4,7 +4,7 @@
   "description": "Verovio Image Display Assistant",
   "main": "build/vida.min.js",
   "scripts": {
-    "install": "webpack",
+    "build": "webpack",
     "dev": "webpack-dev-server --config webpack-dev.config.js"
   },
   "repository": {
@@ -14,9 +14,6 @@
   "author": "Andrew Horwitz",
   "license": "MIT",
   "devDependencies": {
-    "webpack-dev-server": "^3.1.5"
-  },
-  "dependencies": {
     "autoprefixer": "^9.1.1",
     "babel-core": "^6.26.3",
     "babel-loader": "^7.1.5",
@@ -28,6 +25,9 @@
     "style-loader": "^0.22.1",
     "webpack": "^4.10.1",
     "webpack-cli": "^3.1.0",
+    "webpack-dev-server": "^3.1.5",
     "worker-loader": "^2.0.0"
+  },
+  "dependencies": {
   }
 }
